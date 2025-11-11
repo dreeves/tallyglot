@@ -2,6 +2,8 @@ javascript:(function(){
   
 setTimeout(function(){
 
+console.log('[WC] Bookmarklet started');
+
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
 var ET='END_WORDCOUNT_EXCLUSION';
@@ -17,14 +19,6 @@ var title='',
        ||document.querySelector('#issue_body')
        ||document.querySelector('textarea[aria-label*="description"]')
        ||document.querySelector('textarea.comment-form-textarea');
-    
-var allTextareas=document.querySelectorAll('textarea');
-console.log('All textareas:', allTextareas);
-allTextareas.forEach(function(ta,i){console.log('Textarea '+i+' value:', ta.value);});
-console.log('GitHub title element:', ghTitle);
-console.log('GitHub body element:', ghBody);
-if(ghTitle){console.log('Title value:', ghTitle.value);}
-if(ghBody){console.log('Body value:', ghBody.value);}
   
 if(ghTitle&&ghTitle.value){ title=ghTitle.value.trim();}
 else if(h1){title=(h1.innerText||h1.textContent).trim();}
@@ -43,12 +37,14 @@ if(ghBody&&ghBody.value){
   var sels=['article','main',
             '.PostsPage-postContent',
             '.PostBody-root','.content','body'],e=null;
-  for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e)break;}
+  for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e){break}}
   if(!e)e=document.body;
   var c=e.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe')
    .forEach(function(x){x.remove();});
-  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br').forEach(function(b){
+  var blocks=c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br');
+  blocks.forEach(function(b,idx){
+    /* NB: w/oout spaces around % the browser treats % as percent-encoding */
     if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
     else{b.insertAdjacentText('afterend',' ');} 
   });
@@ -145,8 +141,12 @@ function getAllExclusionTexts(s){
 function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
   
 function countOccurrences(text,searchFor){
+  console.log('[WC] countOccurrences called for "',searchFor,'" in text length',text.length);
   var norm=normalizeWS(searchFor).toLowerCase();
+  console.log('[WC] Normalized searchFor:',norm);
+  if(!norm)return 0; /* avoid infinite loop if norm is empty */
   var textNorm=normalizeWS(text).toLowerCase();
+  console.log('[WC] Normalized text length:',textNorm.length);
   var count=0,idx=0;
   while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length;}
   return count;
@@ -162,6 +162,7 @@ function highlightExcluded(s,exclusionTexts){
   for(var i=0;i<exclusionTexts.length;i++){
     var norm=normalizeWS(exclusionTexts[i]);
     var searchFor=norm.toLowerCase();
+    if(!searchFor)continue; /* skip empty exclusions to avoid infinite loop */
     var idx=0;
     while((idx=sNormLower.indexOf(searchFor,idx))!==-1){
       matches.push({start:idx,end:idx+searchFor.length});
@@ -184,17 +185,21 @@ function highlightExcluded(s,exclusionTexts){
 var prefix=getPrefixToFirst(t);
 var exclusionTexts=getAllExclusionTexts(t);
 var x=wordcount(prefix);
+console.log('[WC] Total words before exclusions:',x);
 var subtractTerms=[],totalSubtraction=0;
 for(var i=0;i<exclusionTexts.length;i++){
   var excl=exclusionTexts[i];
   var y=wordcount(excl);
+  console.log('[WC] Exclusion',i+1,': "',excl,'" =>',y,'words');
   var n=countOccurrences(prefix,excl);
+  console.log('[WC] Occurrences in prefix:',n);
   if(n>0){
     subtractTerms.push(y.toLocaleString()+'*'+n.toLocaleString());
     totalSubtraction+=n*y;
   }
 }
 var result=x-totalSubtraction;
+console.log('[WC] Final word count after exclusions:',result);
 
 var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
