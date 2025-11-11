@@ -1,9 +1,9 @@
 javascript:(function(){
   
 setTimeout(function(){
-  var ST='BEGIN_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF';
+  var ST='BEGIN_WORDCOUNT_EXCLUSION';
   var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
-  var ET='END_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF';
+  var ET='END_WORDCOUNT_EXCLUSION';
 
   var title='',h1=document.querySelector('h1,.PostsPage-title'),
     tt=document.querySelector('title');
@@ -157,7 +157,7 @@ function matchGraphemesFallback(s){
   var tally=document.createElement('div');
   tally.className='wc-count';
   tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
-  var minuend=y.toLocaleString()+(n===1?'':'*'+n.toLocaleString());
+  var minuend=y.toLocaleString()+('*'+n.toLocaleString());
   tally.textContent=x.toLocaleString()+' - '+minuend+' = '+result.toLocaleString();
 
   var preview=document.createElement('div');
