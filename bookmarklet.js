@@ -1,52 +1,59 @@
 javascript:(function(){
   
 setTimeout(function(){
-  var ST='BEGIN_WORDCOUNT_EXCLUSION';
-  var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
-  var ET='END_WORDCOUNT_EXCLUSION';
 
-  var title='',h1=document.querySelector('h1,.PostsPage-title'),
-    tt=document.querySelector('title'),
-    ghTitle=document.querySelector('input[name="issue[title]"]')||document.querySelector('#issue_title')||document.querySelector('input[aria-label*="Title"]')||document.querySelector('input[placeholder*="Title"]'),
-    ghBody=document.querySelector('textarea[name="issue[body]"]')||document.querySelector('#issue_body')||document.querySelector('textarea[aria-label*="description"]')||document.querySelector('textarea.comment-form-textarea');
+var ST='BEGIN_WORDCOUNT_EXCLUSION';
+var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
+var ET='END_WORDCOUNT_EXCLUSION';
+
+var title='',
+  h1=document.querySelector('h1,.PostsPage-title'),
+  tt=document.querySelector('title'),
+  ghTitle=document.querySelector('input[name="issue[title]"]')
+        ||document.querySelector('#issue_title')
+        ||document.querySelector('input[aria-label*="Title"]')
+        ||document.querySelector('input[placeholder*="Title"]'),
+  ghBody=document.querySelector('textarea[name="issue[body]"]')
+       ||document.querySelector('#issue_body')
+       ||document.querySelector('textarea[aria-label*="description"]')
+       ||document.querySelector('textarea.comment-form-textarea');
+    
+var allTextareas=document.querySelectorAll('textarea');
+console.log('All textareas:', allTextareas);
+allTextareas.forEach(function(ta,i){console.log('Textarea '+i+' value:', ta.value);});
+console.log('GitHub title element:', ghTitle);
+console.log('GitHub body element:', ghBody);
+if(ghTitle){console.log('Title value:', ghTitle.value);}
+if(ghBody){console.log('Body value:', ghBody.value);}
   
-  var allTextareas=document.querySelectorAll('textarea');
-  console.log('All textareas:', allTextareas);
-  allTextareas.forEach(function(ta,i){console.log('Textarea '+i+' value:', ta.value);});
-  console.log('GitHub title element:', ghTitle);
-  console.log('GitHub body element:', ghBody);
-  if(ghTitle){console.log('Title value:', ghTitle.value);}
-  if(ghBody){console.log('Body value:', ghBody.value);}
-  
-  if(ghTitle&&ghTitle.value){
-    title=ghTitle.value.trim();
-  }else if(h1){title=(h1.innerText||h1.textContent).trim();}
-  else if(tt){title=(tt.innerText||tt.textContent).trim();}
+if(ghTitle&&ghTitle.value){ title=ghTitle.value.trim();}
+else if(h1){title=(h1.innerText||h1.textContent).trim();}
+else if(tt){title=(tt.innerText||tt.textContent).trim();}
 
-  /* Part of a vain attempt to make this work on google docs */
-  var ogDesc=document.querySelector('meta[property="og:description"]');
-  if(ogDesc){
-    console.log('og:description content:', ogDesc.getAttribute('content'));
-  }
+/* Part of a vain attempt to make this work on google docs */
+var ogDesc=document.querySelector('meta[property="og:description"]');
+if(ogDesc){
+  console.log('og:description content:', ogDesc.getAttribute('content'));
+}
 
-  var bodyText='';
-  if(ghBody&&ghBody.value){
-    bodyText=ghBody.value;
-  }else{
-    var sels=['article','main',
-              '.PostsPage-postContent',
-              '.PostBody-root','.content','body'],e=null;
-    for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e)break;}
-    if(!e)e=document.body;
-    var c=e.cloneNode(true);
-    c.querySelectorAll('script,style,nav,footer,header,iframe')
-      .forEach(function(x){x.remove();});
-    c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br').forEach(function(b){
-      if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
-      else{b.insertAdjacentText('afterend',' ');} 
-    });
-    bodyText=(c.innerText||c.textContent);
-  }
+var bodyText='';
+if(ghBody&&ghBody.value){
+  bodyText=ghBody.value;
+}else{
+  var sels=['article','main',
+            '.PostsPage-postContent',
+            '.PostBody-root','.content','body'],e=null;
+  for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e)break;}
+  if(!e)e=document.body;
+  var c=e.cloneNode(true);
+  c.querySelectorAll('script,style,nav,footer,header,iframe')
+   .forEach(function(x){x.remove();});
+  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br').forEach(function(b){
+    if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
+    else{b.insertAdjacentText('afterend',' ');} 
+  });
+  bodyText=(c.innerText||c.textContent);
+}
 
 /* Sanitize for word counting:
    - NFC normalize; CRLF -> \n
@@ -116,146 +123,147 @@ function matchGraphemesFallback(s){
 }
 
 
-  var t=sanitize(bodyText).trim();
-  if(title && t.indexOf(title)!==0) t=title+' '+t;
+var t=sanitize(bodyText).trim();
+if(title && t.indexOf(title)!==0) t=title+' '+t;
 
-  function getPrefixToFirst(s){ 
-    var fi=s.indexOf(ST); 
-    return s.slice(0,fi===-1?s.length:fi);
-  }
+function getPrefixToFirst(s){ 
+  var fi=s.indexOf(ST); 
+  return s.slice(0,fi===-1?s.length:fi);
+}
   
-  function getAllExclusionTexts(s){
-    var exclusions=[],pos=0;
-    while(true){
-      var a=s.indexOf(ST,pos),b=a===-1?-1:s.indexOf(ET,a+ST.length);
-      if(a===-1||b===-1)break;
-      exclusions.push(s.slice(a+ST.length,b));
-      pos=b+ET.length;
-    }
-    return exclusions;
+function getAllExclusionTexts(s){
+  var exclusions=[],pos=0;
+  while(true){
+    var a=s.indexOf(ST,pos),b=a===-1?-1:s.indexOf(ET,a+ST.length);
+    if(a===-1||b===-1)break;
+    exclusions.push(s.slice(a+ST.length,b));
+    pos=b+ET.length;
   }
+  return exclusions;
+}
   
-  function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
+function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
   
-  function countOccurrences(text,searchFor){
-    var norm=normalizeWS(searchFor).toLowerCase();
-    var textNorm=normalizeWS(text).toLowerCase();
-    var count=0,idx=0;
-    while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length;}
-    return count;
-  }
-  function escHtml(s){ 
-    return String(s).replace(/&/g,'&amp;')
-                    .replace(/</g,'&lt;')
-                    .replace(/>/g,'&gt;'); }
-  function highlightExcluded(s,exclusionTexts){
-    var sNorm=normalizeWS(s);
-    var sNormLower=sNorm.toLowerCase();
-    var matches=[];
-    for(var i=0;i<exclusionTexts.length;i++){
-      var norm=normalizeWS(exclusionTexts[i]);
-      var searchFor=norm.toLowerCase();
-      var idx=0;
-      while((idx=sNormLower.indexOf(searchFor,idx))!==-1){
-        matches.push({start:idx,end:idx+searchFor.length});
-        idx+=searchFor.length;
-      }
-    }
-    matches.sort(function(a,b){return a.start-b.start;});
-    var lastIdx=0,result='';
-    for(var j=0;j<matches.length;j++){
-      var m=matches[j];
-      if(m.start>=lastIdx){
-        result+=escHtml(sNorm.slice(lastIdx,m.start));
-        result+='<span style="color:#d32f2f;text-decoration:line-through;">'+escHtml(sNorm.slice(m.start,m.end))+'</span>';
-        lastIdx=m.end;
-      }
-    }
-    return result+escHtml(sNorm.slice(lastIdx));
-  }
-
-  var prefix=getPrefixToFirst(t);
-  var exclusionTexts=getAllExclusionTexts(t);
-  var x=wordcount(prefix);
-  var subtractTerms=[],totalSubtraction=0;
+function countOccurrences(text,searchFor){
+  var norm=normalizeWS(searchFor).toLowerCase();
+  var textNorm=normalizeWS(text).toLowerCase();
+  var count=0,idx=0;
+  while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length;}
+  return count;
+}
+function escHtml(s){ 
+  return String(s).replace(/&/g,'&amp;')
+                  .replace(/</g,'&lt;')
+                  .replace(/>/g,'&gt;'); }
+function highlightExcluded(s,exclusionTexts){
+  var sNorm=normalizeWS(s);
+  var sNormLower=sNorm.toLowerCase();
+  var matches=[];
   for(var i=0;i<exclusionTexts.length;i++){
-    var excl=exclusionTexts[i];
-    var y=wordcount(excl);
-    var n=countOccurrences(prefix,excl);
-    if(n>0){
-      subtractTerms.push(y.toLocaleString()+'*'+n.toLocaleString());
-      totalSubtraction+=n*y;
+    var norm=normalizeWS(exclusionTexts[i]);
+    var searchFor=norm.toLowerCase();
+    var idx=0;
+    while((idx=sNormLower.indexOf(searchFor,idx))!==-1){
+      matches.push({start:idx,end:idx+searchFor.length});
+      idx+=searchFor.length;
     }
   }
-  var result=x-totalSubtraction;
-
-  var m=document.createElement('div');
-  m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
-
-  var header=document.createElement('div');
-  header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;';
-  var label=document.createElement('span'); 
-  label.style.cssText='font-size:13px;color:#666;'; 
-  label.textContent='Word Count';
-  var close=document.createElement('button'); 
-  close.type='button'; 
-  close.setAttribute('aria-label','Close'); 
-  close.style.cssText='border:none;background:none;cursor:pointer;font-size:16px;color:#999;padding:0;width:20px;height:20px;'; 
-  close.textContent='x';
-  header.appendChild(label); header.appendChild(close);
-
-  var tally=document.createElement('div');
-  tally.className='wc-count';
-  tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
-  if(subtractTerms.length>0){
-    tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '+result.toLocaleString();
-  }else{
-    tally.textContent=x.toLocaleString()+' - 0 = '+result.toLocaleString();
+  matches.sort(function(a,b){return a.start-b.start;});
+  var lastIdx=0,result='';
+  for(var j=0;j<matches.length;j++){
+    var m=matches[j];
+    if(m.start>=lastIdx){
+      result+=escHtml(sNorm.slice(lastIdx,m.start));
+      result+='<span style="color:#d32f2f;text-decoration:line-through;">'+escHtml(sNorm.slice(m.start,m.end))+'</span>';
+      lastIdx=m.end;
+    }
   }
+  return result+escHtml(sNorm.slice(lastIdx));
+}
 
-  var preview=document.createElement('div');
-  preview.className='wc-preview';
-  preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.4;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;white-space:pre-wrap;word-break:break-word;';
-  if(exclusionTexts.length>0){
-    var tempDiv=document.createElement('div');
-    tempDiv.innerHTML=highlightExcluded(prefix,exclusionTexts);
-    while(tempDiv.firstChild)preview.appendChild(tempDiv.firstChild);
-  }else{
-    preview.textContent=prefix;
+var prefix=getPrefixToFirst(t);
+var exclusionTexts=getAllExclusionTexts(t);
+var x=wordcount(prefix);
+var subtractTerms=[],totalSubtraction=0;
+for(var i=0;i<exclusionTexts.length;i++){
+  var excl=exclusionTexts[i];
+  var y=wordcount(excl);
+  var n=countOccurrences(prefix,excl);
+  if(n>0){
+    subtractTerms.push(y.toLocaleString()+'*'+n.toLocaleString());
+    totalSubtraction+=n*y;
   }
+}
+var result=x-totalSubtraction;
 
-  var copy=document.createElement('button');
-  copy.id='wc-copy'; copy.type='button';
-  copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
-  copy.textContent='Copy exclusion tags';
-  copy.addEventListener('click',function(){
-    var lines=[ST, EXAMPLE_EXCLUSION, ET];
-    navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
-    copy.style.background='#c8e6c9';
-    copy.textContent='Copied';
-    setTimeout(function(){
-      copy.style.background='#e3f2fd';
-      copy.textContent='Copy exclusion tags';},1500);
-  });
+var m=document.createElement('div');
+m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
 
-  m.appendChild(header); 
-  m.appendChild(tally); 
-  m.appendChild(preview); 
-  m.appendChild(copy);
-  document.body.appendChild(m);
+var header=document.createElement('div');
+header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;';
+var label=document.createElement('span'); 
+label.style.cssText='font-size:13px;color:#666;'; 
+label.textContent='Word Count';
+var close=document.createElement('button'); 
+close.type='button'; 
+close.setAttribute('aria-label','Close'); 
+close.style.cssText='border:none;background:none;cursor:pointer;font-size:16px;color:#999;padding:0;width:20px;height:20px;'; 
+close.textContent='x';
+header.appendChild(label); header.appendChild(close);
 
-  function cleanup(){ if(m&&m.parentNode) m.parentNode.removeChild(m); 
-    document.removeEventListener('click',closeHandler,true); 
-    document.removeEventListener('keydown',keyHandler,true); }
-  function closeHandler(evt){ if(!m.contains(evt.target)) cleanup(); }
-  function keyHandler(e){ if((e.key||'')==='Escape') cleanup(); }
+var tally=document.createElement('div');
+tally.className='wc-count';
+tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
+if(subtractTerms.length>0){
+  tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '+result.toLocaleString();
+}else{
+  tally.textContent=x.toLocaleString()+' - 0 = '+result.toLocaleString();
+}
 
-  close.addEventListener('click',function(e){ 
-    e.preventDefault(); e.stopPropagation(); cleanup(); }, {capture:true});
+var preview=document.createElement('div');
+preview.className='wc-preview';
+preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.4;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;white-space:pre-wrap;word-break:break-word;';
+if(exclusionTexts.length>0){
+  var tempDiv=document.createElement('div');
+  tempDiv.innerHTML=highlightExcluded(prefix,exclusionTexts);
+  while(tempDiv.firstChild)preview.appendChild(tempDiv.firstChild);
+}else{
+  preview.textContent=prefix;
+}
+
+var copy=document.createElement('button');
+copy.id='wc-copy'; copy.type='button';
+copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
+copy.textContent='Copy exclusion tags';
+copy.addEventListener('click',function(){
+  var lines=[ST, EXAMPLE_EXCLUSION, ET];
+  navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
+  copy.style.background='#c8e6c9';
+  copy.textContent='Copied';
   setTimeout(function(){
-    document.addEventListener('click',closeHandler,true); 
-    document.addEventListener('keyup',keyHandler,true); 
-  },10);
-},100);
-  
+    copy.style.background='#e3f2fd';
+    copy.textContent='Copy exclusion tags';},1500);
+});
+
+m.appendChild(header); 
+m.appendChild(tally); 
+m.appendChild(preview); 
+m.appendChild(copy);
+document.body.appendChild(m);
+
+function cleanup(){ if(m&&m.parentNode) m.parentNode.removeChild(m); 
+  document.removeEventListener('click',closeHandler,true); 
+  document.removeEventListener('keydown',keyHandler,true); }
+function closeHandler(evt){ if(!m.contains(evt.target)) cleanup(); }
+function keyHandler(e){ if((e.key||'')==='Escape') cleanup(); }
+
+close.addEventListener('click',function(e){ 
+  e.preventDefault(); e.stopPropagation(); cleanup(); }, {capture:true});
+setTimeout(function(){
+  document.addEventListener('click',closeHandler,true); 
+  document.addEventListener('keyup',keyHandler,true); 
+},10);
+
+},100); /* end of setTimeout */
+
 })();
