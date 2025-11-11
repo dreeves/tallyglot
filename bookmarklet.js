@@ -10,6 +10,7 @@ setTimeout(function(){
   if(h1){title=(h1.innerText||h1.textContent).trim();}
   else if(tt){title=(tt.innerText||tt.textContent).trim();}
 
+  /* Part of a vain attempt to make this work on google docs */
   var ogDesc=document.querySelector('meta[property="og:description"]');
   if(ogDesc){
     console.log('og:description content:', ogDesc.getAttribute('content'));
