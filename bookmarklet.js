@@ -1,6 +1,10 @@
 javascript:(function(){
   
 setTimeout(function(){
+  var ST='BEGIN_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF';
+  var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
+  var ET='END_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF';
+
   var title='',h1=document.querySelector('h1,.PostsPage-title'),
     tt=document.querySelector('title');
   if(h1){title=(h1.innerText||h1.textContent).trim();}
@@ -20,26 +24,76 @@ setTimeout(function(){
     else{b.insertAdjacentText('afterend',' ');} 
   });
 
-  function sanitize(s){
-    s=String(s||'');
-    var inv=[8203,8204,8205,8288,65279,173];
-    for(var i=0;i<inv.length;i++){s=s.split(String.fromCharCode(inv[i])).join('');}
-    s=s.split(String.fromCharCode(160)).join(' ');
-    return s;
+/* Sanitize for word counting:
+   - NFC normalize; CRLF -> \n
+   - Convert Unicode spaces to ASCII space (LSEP/PSEP -> \n)
+   - Drop invisibles (BOM, ZWSP, SHY, bidi controls, isolates)
+   - KEEP emoji machinery: ZWJ (U+200D) and VS16 (U+FE0F) */
+function sanitize(s){
+  s=String(s??'');
+  if(s.normalize)s=s.normalize('NFC');
+  s=s.replace(/\r\n?/g,'\n');
+  s=s.replace(/[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
+  s=s.replace(/[\u2028\u2029]/g,'\n');
+  s=s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g,' ');
+  s=s.replace(/[ \t\f\v]+/g,' ');
+  s=s.replace(/[ \t\f\v]*\n[ \t\f\v]*/g,'\n');
+  return s;
+}
+
+/* Word count:
+   - Contiguous letters/digits/marks OR emoji clusters count as ONE word
+   - No spaces => not separate words (e.g., "foo🙂bar" -> 1, "👍🏽👍🏻" -> 1)
+   - Spaced punctuation (e.g., " — ") does not count */
+function wordcount(text){
+  text=sanitize(text);
+  if(!text)return 0;
+
+  var segOK=typeof Intl!=='undefined'&&typeof Intl.Segmenter==='function';
+  var graphemes=segOK?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text)].map(function(x){return x.segment;})
+                      : matchGraphemesFallback(text);
+
+  var EP=tryRe('\\p{Extended_Pictographic}');
+  var pictoFallback=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u;
+  var flagRE=/^[\u{1F1E6}-\u{1F1FF}]{2}$/u;
+  var keycapRE=/^(?:[0-9#*]\uFE0F?\u20E3)$/u;
+  var letterNumMark=/[\p{L}\p{N}\p{M}]/u;
+  var apostrophe=/^['’]$/u;
+
+  var inWord=false,cnt=0;
+  for(var i=0;i<graphemes.length;i++){
+    var g=graphemes[i];
+    var isEmoji=flagRE.test(g)||keycapRE.test(g)||(EP?EP.test(g):pictoFallback.test(g));
+    var isWordChar=isEmoji||letterNumMark.test(g);
+    if(isWordChar){ if(!inWord){ inWord=true; cnt++; } }
+    else if(apostrophe.test(g)&&inWord){ /* keep word open */ }
+    else { inWord=false; }
   }
+  return cnt;
+}
+
+/* Helpers */
+function tryRe(src){ try{return new RegExp(src,'u')}catch{return null} }
+
+/* Grapheme fallback:
+   - Emoji ZWJ sequences (+ optional VS16 + skin tones)
+   - Flags and keycaps as single graphemes
+   - Otherwise any single code point */
+function matchGraphemesFallback(s){
+  var base='[\\u2600-\\u27BF\\u{1F300}-\\u{1FAFF}]';
+  var tone='[\\u{1F3FB}-\\u{1F3FF}]';
+  var re=new RegExp(
+    '(?:'+base+')(?:\\uFE0F)?(?:'+tone+')?(?:\\u200D(?:'+base+')(?:\\uFE0F)?(?:'+tone+')?)*'
+    +'|[\\u{1F1E6}-\\u{1F1FF}]{2}'
+    +'|[#*0-9]\\uFE0F?\\u20E3'
+    +'|[\\s\\S]'
+  ,'gu');
+  return s.match(re)||[];
+}
+
 
   var t=sanitize((c.innerText||c.textContent)).trim();
   if(title && t.indexOf(title)!==0) t=title+' '+t;
-
-  var ST='BEGIN_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF', 
-    ET='END_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF';
-
-  /* ASCII word tokens with optional internal apostrophes/hyphens. "--" does not count. */
-  var WORD=/[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/g;
-  function countWords(s){ 
-    var m=sanitize(String(s||'')).trim().match(WORD); 
-    return m?m.length:0;
-  }
 
   function getPrefixToFirst(s){ 
     var fi=s.indexOf(ST); 
@@ -80,8 +134,8 @@ setTimeout(function(){
 
   var prefix=getPrefixToFirst(t);
   var exclusionText=getExclusionText(t);
-  var x=countWords(prefix);
-  var y=countWords(exclusionText);
+  var x=wordcount(prefix);
+  var y=wordcount(exclusionText);
   var n=exclusionText?countOccurrences(prefix,exclusionText):0;
   var result=x-n*y;
 
@@ -109,16 +163,20 @@ setTimeout(function(){
   var preview=document.createElement('div');
   preview.className='wc-preview';
   preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.4;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;white-space:pre-wrap;word-break:break-word;';
-  preview.innerHTML=exclusionText?highlightExcluded(prefix,exclusionText):escHtml(prefix);
+  if(exclusionText){
+    var tempDiv=document.createElement('div');
+    tempDiv.innerHTML=highlightExcluded(prefix,exclusionText);
+    while(tempDiv.firstChild)preview.appendChild(tempDiv.firstChild);
+  }else{
+    preview.textContent=prefix;
+  }
 
   var copy=document.createElement('button');
   copy.id='wc-copy'; copy.type='button';
   copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
   copy.textContent='Copy exclusion tags';
   copy.addEventListener('click',function(){
-    var lines=['BEGIN_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF',
-"paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ",
-               'END_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF'];
+    var lines=[ST, EXAMPLE_EXCLUSION, ET];
     navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
     copy.style.background='#c8e6c9';
     copy.textContent='Copied';
