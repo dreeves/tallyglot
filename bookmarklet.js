@@ -10,6 +10,11 @@ setTimeout(function(){
   if(h1){title=(h1.innerText||h1.textContent).trim();}
   else if(tt){title=(tt.innerText||tt.textContent).trim();}
 
+  var ogDesc=document.querySelector('meta[property="og:description"]');
+  if(ogDesc){
+    console.log('og:description content:', ogDesc.getAttribute('content'));
+  }
+
   var sels=['article','main',
             '.PostsPage-postContent',
             '.PostBody-root','.content','body'],e=null;
@@ -100,9 +105,15 @@ function matchGraphemesFallback(s){
     return s.slice(0,fi===-1?s.length:fi);
   }
   
-  function getExclusionText(s){
-    var a=s.indexOf(ST),b=s.indexOf(ET,a+ST.length);
-    return (a!==-1&&b!==-1)?s.slice(a+ST.length,b):'';
+  function getAllExclusionTexts(s){
+    var exclusions=[],pos=0;
+    while(true){
+      var a=s.indexOf(ST,pos),b=a===-1?-1:s.indexOf(ET,a+ST.length);
+      if(a===-1||b===-1)break;
+      exclusions.push(s.slice(a+ST.length,b));
+      pos=b+ET.length;
+    }
+    return exclusions;
   }
   
   function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
@@ -118,26 +129,46 @@ function matchGraphemesFallback(s){
     return String(s).replace(/&/g,'&amp;')
                     .replace(/</g,'&lt;')
                     .replace(/>/g,'&gt;'); }
-  function highlightExcluded(s,exclusionText){
-    var norm=normalizeWS(exclusionText);
+  function highlightExcluded(s,exclusionTexts){
     var sNorm=normalizeWS(s);
-    var searchFor=norm.toLowerCase();
     var sNormLower=sNorm.toLowerCase();
-    var lastIdx=0,idx,result='';
-    while((idx=sNormLower.indexOf(searchFor,lastIdx))!==-1){
-      result+=escHtml(sNorm.slice(lastIdx,idx));
-      result+='<span style="color:#d32f2f;text-decoration:line-through;">'+escHtml(sNorm.slice(idx,idx+searchFor.length))+'</span>';
-      lastIdx=idx+searchFor.length;
+    var matches=[];
+    for(var i=0;i<exclusionTexts.length;i++){
+      var norm=normalizeWS(exclusionTexts[i]);
+      var searchFor=norm.toLowerCase();
+      var idx=0;
+      while((idx=sNormLower.indexOf(searchFor,idx))!==-1){
+        matches.push({start:idx,end:idx+searchFor.length});
+        idx+=searchFor.length;
+      }
     }
-    return result?result+escHtml(sNorm.slice(lastIdx)):escHtml(sNorm);
+    matches.sort(function(a,b){return a.start-b.start;});
+    var lastIdx=0,result='';
+    for(var j=0;j<matches.length;j++){
+      var m=matches[j];
+      if(m.start>=lastIdx){
+        result+=escHtml(sNorm.slice(lastIdx,m.start));
+        result+='<span style="color:#d32f2f;text-decoration:line-through;">'+escHtml(sNorm.slice(m.start,m.end))+'</span>';
+        lastIdx=m.end;
+      }
+    }
+    return result+escHtml(sNorm.slice(lastIdx));
   }
 
   var prefix=getPrefixToFirst(t);
-  var exclusionText=getExclusionText(t);
+  var exclusionTexts=getAllExclusionTexts(t);
   var x=wordcount(prefix);
-  var y=wordcount(exclusionText);
-  var n=exclusionText?countOccurrences(prefix,exclusionText):0;
-  var result=x-n*y;
+  var subtractTerms=[],totalSubtraction=0;
+  for(var i=0;i<exclusionTexts.length;i++){
+    var excl=exclusionTexts[i];
+    var y=wordcount(excl);
+    var n=countOccurrences(prefix,excl);
+    if(n>0){
+      subtractTerms.push(y.toLocaleString()+'*'+n.toLocaleString());
+      totalSubtraction+=n*y;
+    }
+  }
+  var result=x-totalSubtraction;
 
   var m=document.createElement('div');
   m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
@@ -157,15 +188,18 @@ function matchGraphemesFallback(s){
   var tally=document.createElement('div');
   tally.className='wc-count';
   tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
-  var minuend=y.toLocaleString()+('*'+n.toLocaleString());
-  tally.textContent=x.toLocaleString()+' - '+minuend+' = '+result.toLocaleString();
+  if(subtractTerms.length>0){
+    tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '+result.toLocaleString();
+  }else{
+    tally.textContent=x.toLocaleString();
+  }
 
   var preview=document.createElement('div');
   preview.className='wc-preview';
   preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.4;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;white-space:pre-wrap;word-break:break-word;';
-  if(exclusionText){
+  if(exclusionTexts.length>0){
     var tempDiv=document.createElement('div');
-    tempDiv.innerHTML=highlightExcluded(prefix,exclusionText);
+    tempDiv.innerHTML=highlightExcluded(prefix,exclusionTexts);
     while(tempDiv.firstChild)preview.appendChild(tempDiv.firstChild);
   }else{
     preview.textContent=prefix;
