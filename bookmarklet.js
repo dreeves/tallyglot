@@ -34,61 +34,56 @@ setTimeout(function(){
   var ST='BEGIN_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF', 
     ET='END_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF';
 
-  function getBase(s){
-    var le=s.lastIndexOf(ET);
-    if(le!==-1) return s.slice(0,le+ET.length);
-    var fb=s.indexOf(ST);
-    return fb!==-1 ? s.slice(0,fb) : s;
-  }
-  function getPrefixToFirst(s){ 
-    var fi=s.indexOf(ST); 
-    return fi!==-1 ? s.slice(0,fi) : s; }
-  var base=getBase(t);
-
   /* ASCII word tokens with optional internal apostrophes/hyphens. "--" does not count. */
   var WORD=/[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/g;
   function countWords(s){ 
-    s=sanitize(String(s)).trim(); 
-    if(!s) return 0; 
-    var m=s.match(WORD); 
-    return m?m.length:0; }
-
-  function sumExcluded(s){
-    var sum=0,i=0,a,b;
-    while((a=s.indexOf(ST,i))!==-1 && (b=s.indexOf(ET,a+ST.length))!==-1){
-      sum += countWords(s.slice(a+ST.length,b));
-      i=b+ET.length;
-    }
-    return sum;
+    var m=sanitize(String(s||'')).trim().match(WORD); 
+    return m?m.length:0;
   }
-  function stripBlocks(s){
-    var out='',i=0,a,b;
-    while((a=s.indexOf(ST,i))!==-1 && (b=s.indexOf(ET,a+ST.length))!==-1){
-      out += s.slice(i,a);
-      i = b + ET.length;
-    }
-    return out + s.slice(i);
+
+  function getPrefixToFirst(s){ 
+    var fi=s.indexOf(ST); 
+    return s.slice(0,fi===-1?s.length:fi);
+  }
+  
+  function getExclusionText(s){
+    var a=s.indexOf(ST),b=s.indexOf(ET,a+ST.length);
+    return (a!==-1&&b!==-1)?s.slice(a+ST.length,b):'';
+  }
+  
+  function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
+  
+  function countOccurrences(text,searchFor){
+    var norm=normalizeWS(searchFor).toLowerCase();
+    var textNorm=normalizeWS(text).toLowerCase();
+    var count=0,idx=0;
+    while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length;}
+    return count;
   }
   function escHtml(s){ 
     return String(s).replace(/&/g,'&amp;')
                     .replace(/</g,'&lt;')
                     .replace(/>/g,'&gt;'); }
-  function highlightExcluded(s){
-    var b=getBase(s), out='', i=0, a, b2;
-    while((a=b.indexOf(ST,i))!==-1 && (b2=b.indexOf(ET,a+ST.length))!==-1){
-      out += escHtml(b.slice(i,a));
-      out += '<span style="color:#d32f2f;text-decoration:line-through;">' 
-          + escHtml(b.slice(a+ST.length,b2)) + '</span>';
-      i=b2+ET.length;
+  function highlightExcluded(s,exclusionText){
+    var norm=normalizeWS(exclusionText);
+    var sNorm=normalizeWS(s);
+    var searchFor=norm.toLowerCase();
+    var sNormLower=sNorm.toLowerCase();
+    var lastIdx=0,idx,result='';
+    while((idx=sNormLower.indexOf(searchFor,lastIdx))!==-1){
+      result+=escHtml(sNorm.slice(lastIdx,idx));
+      result+='<span style="color:#d32f2f;text-decoration:line-through;">'+escHtml(sNorm.slice(idx,idx+searchFor.length))+'</span>';
+      lastIdx=idx+searchFor.length;
     }
-    out += escHtml(b.slice(i));
-    return out;
+    return result?result+escHtml(sNorm.slice(lastIdx)):escHtml(sNorm);
   }
 
-  var excludedWords=sumExcluded(base);
-  var shown=stripBlocks(base);
-  var wPrefix=countWords(getPrefixToFirst(base));
-  var wShown=countWords(shown);
+  var prefix=getPrefixToFirst(t);
+  var exclusionText=getExclusionText(t);
+  var x=countWords(prefix);
+  var y=countWords(exclusionText);
+  var n=exclusionText?countOccurrences(prefix,exclusionText):0;
+  var result=x-n*y;
 
   var m=document.createElement('div');
   m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
@@ -108,14 +103,13 @@ setTimeout(function(){
   var tally=document.createElement('div');
   tally.className='wc-count';
   tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
-  tally.textContent=
-    wPrefix.toLocaleString()+' - '+excludedWords.toLocaleString()+' = '
-    +wShown.toLocaleString();
+  var minuend=y.toLocaleString()+(n===1?'':'*'+n.toLocaleString());
+  tally.textContent=x.toLocaleString()+' - '+minuend+' = '+result.toLocaleString();
 
   var preview=document.createElement('div');
   preview.className='wc-preview';
   preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.4;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;white-space:pre-wrap;word-break:break-word;';
-  preview.innerHTML=highlightExcluded(t);
+  preview.innerHTML=exclusionText?highlightExcluded(prefix,exclusionText):escHtml(prefix);
 
   var copy=document.createElement('button');
   copy.id='wc-copy'; copy.type='button';
@@ -123,7 +117,7 @@ setTimeout(function(){
   copy.textContent='Copy exclusion tags';
   copy.addEventListener('click',function(){
     var lines=['BEGIN_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF',
-"paste text here that shouldn't get counted in the word count  \n(notice how this text has 24 words which get subtracted from the count)  ",
+"paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ",
                'END_TEXT_TO_SUBTRACT_THE_WORDCOUNT_OF'];
     navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
     copy.style.background='#c8e6c9';
