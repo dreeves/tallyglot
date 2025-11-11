@@ -6,8 +6,21 @@ setTimeout(function(){
   var ET='END_WORDCOUNT_EXCLUSION';
 
   var title='',h1=document.querySelector('h1,.PostsPage-title'),
-    tt=document.querySelector('title');
-  if(h1){title=(h1.innerText||h1.textContent).trim();}
+    tt=document.querySelector('title'),
+    ghTitle=document.querySelector('input[name="issue[title]"]')||document.querySelector('#issue_title')||document.querySelector('input[aria-label*="Title"]')||document.querySelector('input[placeholder*="Title"]'),
+    ghBody=document.querySelector('textarea[name="issue[body]"]')||document.querySelector('#issue_body')||document.querySelector('textarea[aria-label*="description"]')||document.querySelector('textarea.comment-form-textarea');
+  
+  var allTextareas=document.querySelectorAll('textarea');
+  console.log('All textareas:', allTextareas);
+  allTextareas.forEach(function(ta,i){console.log('Textarea '+i+' value:', ta.value);});
+  console.log('GitHub title element:', ghTitle);
+  console.log('GitHub body element:', ghBody);
+  if(ghTitle){console.log('Title value:', ghTitle.value);}
+  if(ghBody){console.log('Body value:', ghBody.value);}
+  
+  if(ghTitle&&ghTitle.value){
+    title=ghTitle.value.trim();
+  }else if(h1){title=(h1.innerText||h1.textContent).trim();}
   else if(tt){title=(tt.innerText||tt.textContent).trim();}
 
   /* Part of a vain attempt to make this work on google docs */
@@ -16,19 +29,24 @@ setTimeout(function(){
     console.log('og:description content:', ogDesc.getAttribute('content'));
   }
 
-  var sels=['article','main',
-            '.PostsPage-postContent',
-            '.PostBody-root','.content','body'],e=null;
-  for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e)break;}
-  if(!e)e=document.body;
-
-  var c=e.cloneNode(true);
-  c.querySelectorAll('script,style,nav,footer,header,iframe')
-    .forEach(function(x){x.remove();});
-  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br').forEach(function(b){
-    if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
-    else{b.insertAdjacentText('afterend',' ');} 
-  });
+  var bodyText='';
+  if(ghBody&&ghBody.value){
+    bodyText=ghBody.value;
+  }else{
+    var sels=['article','main',
+              '.PostsPage-postContent',
+              '.PostBody-root','.content','body'],e=null;
+    for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e)break;}
+    if(!e)e=document.body;
+    var c=e.cloneNode(true);
+    c.querySelectorAll('script,style,nav,footer,header,iframe')
+      .forEach(function(x){x.remove();});
+    c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br').forEach(function(b){
+      if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
+      else{b.insertAdjacentText('afterend',' ');} 
+    });
+    bodyText=(c.innerText||c.textContent);
+  }
 
 /* Sanitize for word counting:
    - NFC normalize; CRLF -> \n
@@ -49,7 +67,7 @@ function sanitize(s){
 
 /* Word count:
    - Contiguous letters/digits/marks OR emoji clusters count as ONE word
-   - No spaces => not separate words (e.g., "foo🙂bar" -> 1, "👍🏽👍🏻" -> 1)
+   - No spaces => not separate words (e.g., "foo🙂bar" -> 1)
    - Spaced punctuation (e.g., " — ") does not count */
 function wordcount(text){
   text=sanitize(text);
@@ -98,7 +116,7 @@ function matchGraphemesFallback(s){
 }
 
 
-  var t=sanitize((c.innerText||c.textContent)).trim();
+  var t=sanitize(bodyText).trim();
   if(title && t.indexOf(title)!==0) t=title+' '+t;
 
   function getPrefixToFirst(s){ 
@@ -192,7 +210,7 @@ function matchGraphemesFallback(s){
   if(subtractTerms.length>0){
     tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '+result.toLocaleString();
   }else{
-    tally.textContent=x.toLocaleString();
+    tally.textContent=x.toLocaleString()+' - 0 = '+result.toLocaleString();
   }
 
   var preview=document.createElement('div');
