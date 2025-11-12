@@ -1,6 +1,16 @@
+a prefix that does not count
+
 This is a test file with some normal prose.
 It's full of words with apostrophes, "quotes", hyphen-laden words -- you name it.
 Even 😀 emoji, which should count as words. 
 But two emoji in a row shouldn't count as two words unless there's space in between. 👍👍
 
-Google docs says this has 60 words (including all this), so hopefully we match?
+Google docs says this has 69 words (including all this, but not including either instance of the excluded prefix), so hopefully we match?
+
+a prefix that does not count
+
+BEGIN_WORDCOUNT_EXCLUSION 
+a prefix that does not count 
+END_WORDCOUNT_EXCLUSION
+
+nothing here is seen by the wordcounter
