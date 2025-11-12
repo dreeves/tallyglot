@@ -237,7 +237,16 @@ copy.id='wc-copy'; copy.type='button';
 copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
 copy.textContent='Copy exclusion tags';
 copy.addEventListener('click',function(){
-  var lines=[ST, EG, ET];
+  var sel=window.getSelection();
+  var selectedText='';
+  if(sel&&sel.rangeCount>0&&sel.toString().trim()){
+    var range=sel.getRangeAt(0);
+    if(preview.contains(range.commonAncestorContainer)){
+      selectedText=sel.toString();
+    }
+  }
+  var middleText=selectedText||EG;
+  var lines=[ST, middleText, ET];
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
   copy.style.background='#c8e6c9';
   copy.textContent='Copied';
