@@ -24,9 +24,8 @@ else if(tt){title=(tt.innerText||tt.textContent).trim()}
 
 /* Part of a vain attempt to make this work on google docs */
 var ogDesc=document.querySelector('meta[property="og:description"]');
-if(ogDesc){
+if(ogDesc)
   console.log('og:description content:', ogDesc.getAttribute('content'));
-}
 
 var bodyText='';
 if(ghBody&&ghBody.value){
@@ -42,7 +41,7 @@ if(ghBody&&ghBody.value){
    .forEach(function(x){x.remove();});
   var blocks=c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br');
   blocks.forEach(function(b,idx){
-    /* NB: w/oout spaces around % the browser treats % as percent-encoding */
+    /* NB: w/out spaces around % the browser treats % as percent-encoding */
     if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
     else{b.insertAdjacentText('afterend',' ');} 
   });
@@ -58,7 +57,8 @@ function sanitize(s){
   s=String(s??'');
   if(s.normalize)s=s.normalize('NFC');
   s=s.replace(/\r\n?/g,'\n');
-  s=s.replace(/[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
+  s=s.replace(
+    /[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
   s=s.replace(/[\u2028\u2029]/g,'\n');
   s=s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g,' ');
   s=s.replace(/[ \t\f\v]+/g,' ');
@@ -75,7 +75,8 @@ function wordcount(text){
   if(!text)return 0;
 
   var segOK=typeof Intl!=='undefined'&&typeof Intl.Segmenter==='function';
-  var graphemes=segOK?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text)].map(function(x){return x.segment;})
+  var graphemes=segOK?[...new Intl.Segmenter(undefined,{granularity:'grapheme'})
+                             .segment(text)].map(function(x){return x.segment;})
                       : matchGraphemesFallback(text);
 
   var EP=tryRe('\\p{Extended_Pictographic}');
@@ -88,7 +89,8 @@ function wordcount(text){
   var inWord=false,cnt=0;
   for(var i=0;i<graphemes.length;i++){
     var g=graphemes[i];
-    var isEmoji=flagRE.test(g)||keycapRE.test(g)||(EP?EP.test(g):pictoFallback.test(g));
+    var isEmoji = 
+      flagRE.test(g)||keycapRE.test(g)||(EP?EP.test(g):pictoFallback.test(g));
     var isWordChar=isEmoji||letterNumMark.test(g);
     if(isWordChar){ if(!inWord){ inWord=true; cnt++; } }
     else if(apostrophe.test(g)&&inWord){ /* keep word open */ }
@@ -108,14 +110,14 @@ function matchGraphemesFallback(s){
   var base='[\\u2600-\\u27BF\\u{1F300}-\\u{1FAFF}]';
   var tone='[\\u{1F3FB}-\\u{1F3FF}]';
   var re=new RegExp(
-    '(?:'+base+')(?:\\uFE0F)?(?:'+tone+')?(?:\\u200D(?:'+base+')(?:\\uFE0F)?(?:'+tone+')?)*'
+    '(?:'+base+')(?:\\uFE0F)?(?:'+tone+')?(?:\\u200D(?:'+base+')(?:\\uFE0F)?(?:'
+    +tone+')?)*'
     +'|[\\u{1F1E6}-\\u{1F1FF}]{2}'
     +'|[#*0-9]\\uFE0F?\\u20E3'
     +'|[\\s\\S]'
   ,'gu');
   return s.match(re)||[];
 }
-
 
 var t=sanitize(bodyText).trim();
 if(title && t.indexOf(title)!==0) t=title+' '+t;
@@ -172,7 +174,8 @@ function highlightExcluded(s,exclusionTexts){
     var m=matches[j];
     if(m.start>=lastIdx){
       result+=escHtml(sNorm.slice(lastIdx,m.start));
-      result+='<span style="color:#d32f2f;text-decoration:line-through;">'+escHtml(sNorm.slice(m.start,m.end))+'</span>';
+      result+='<span style="color:#d32f2f;text-decoration:line-through;">'
+        +escHtml(sNorm.slice(m.start,m.end))+'</span>';
       lastIdx=m.end;
     }
   }
@@ -217,7 +220,8 @@ var tally=document.createElement('div');
 tally.className='wc-count';
 tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
 if(subtractTerms.length>0){
-  tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '+result.toLocaleString();
+  tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '
+    +result.toLocaleString();
 }else{
   tally.textContent=x.toLocaleString()+' - 0 = '+result.toLocaleString();
 }
