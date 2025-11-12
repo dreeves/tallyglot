@@ -60,59 +60,31 @@ function sanitize(s){
 }
 
 /* Word count:
-   - Contiguous letters/digits/marks OR emoji clusters count as ONE word
-   - No spaces => not separate words (e.g., "foo🙂bar" -> 1)
-   - Spaced punctuation (e.g., " — ") does not count */
+  - Split by whitespace into tokens
+  - Count tokens with at least one "meat" character
+  - Meat = letters (\p{L}), numbers (\p{N}), or emoji
+  - Scaffold = apostrophes/hyphens/punctuation (ignored, just along for ride) */
 function wordcount(text){
   text=sanitize(text);
   if(!text)return 0;
 
-  var segOK=typeof Intl!=='undefined'&&typeof Intl.Segmenter==='function';
-  var graphemes=segOK?[...new Intl.Segmenter(undefined,{granularity:'grapheme'})
-                             .segment(text)].map(function(x){return x.segment;})
-                      : matchGraphemesFallback(text);
-
+  var tokens=text.split(/\s+/);
   var EP=tryRe('\\p{Extended_Pictographic}');
-  var pictoFallback=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u;
-  var flagRE=/^[\u{1F1E6}-\u{1F1FF}]{2}$/u;
-  var keycapRE=/^(?:[0-9#*]\uFE0F?\u20E3)$/u;
-  var letterNumMark=/[\p{L}\p{N}\p{M}]/u;
-  var apostrophe=/^['\u2018\u2019\u02BC\u2032\u201B\u02BB]$/u;
-  var hyphen=/^-$/u;
+  var emojiPattern=EP||/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u;
+  var meatPattern=/[\p{L}\p{N}]/u;
 
-  var inWord=false,cnt=0;
-  for(var i=0;i<graphemes.length;i++){
-    var g=graphemes[i];
-    var isEmoji = 
-      flagRE.test(g)||keycapRE.test(g)||(EP?EP.test(g):pictoFallback.test(g));
-    var isWordChar=isEmoji||letterNumMark.test(g);
-    if(isWordChar){ if(!inWord){ inWord=true; cnt++; } }
-    else if(apostrophe.test(g)&&inWord){ /* keep word open */ }
-    else if(hyphen.test(g)&&inWord){ /* keep word open for hyphenated words */ }
-    else { inWord=false; }
+  var cnt=0;
+  for(var i=0;i<tokens.length;i++){
+    var token=tokens[i];
+    if(token&&(meatPattern.test(token)||emojiPattern.test(token))){
+      cnt++;
+    }
   }
   return cnt;
 }
 
 /* Helpers */
 function tryRe(src){ try{return new RegExp(src,'u')}catch{return null} }
-
-/* Grapheme fallback:
-   - Emoji ZWJ sequences (+ optional VS16 + skin tones)
-   - Flags and keycaps as single graphemes
-   - Otherwise any single code point */
-function matchGraphemesFallback(s){
-  var base='[\\u2600-\\u27BF\\u{1F300}-\\u{1FAFF}]';
-  var tone='[\\u{1F3FB}-\\u{1F3FF}]';
-  var re=new RegExp(
-    '(?:'+base+')(?:\\uFE0F)?(?:'+tone+')?(?:\\u200D(?:'+base+')(?:\\uFE0F)?(?:'
-    +tone+')?)*'
-    +'|[\\u{1F1E6}-\\u{1F1FF}]{2}'
-    +'|[#*0-9]\\uFE0F?\\u20E3'
-    +'|[\\s\\S]'
-  ,'gu');
-  return s.match(re)||[];
-}
 
 var t=sanitize(bodyText).trim();
 
