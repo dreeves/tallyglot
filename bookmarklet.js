@@ -253,18 +253,37 @@ m.appendChild(preview);
 m.appendChild(copy);
 document.body.appendChild(m);
 
-function cleanup(){ if(m&&m.parentNode) m.parentNode.removeChild(m); 
-  document.removeEventListener('click',closeHandler,true); 
-  document.removeEventListener('keydown',keyHandler,true); }
-function closeHandler(evt){ if(!m.contains(evt.target)) cleanup(); }
-function keyHandler(e){ if((e.key||'')==='Escape') cleanup(); }
+function isTypingKey(e){
+  if (e.ctrlKey || e.altKey || e.metaKey) return false; /* Shift is allowed */
+  const k = e.key || '';
+  if (k === 'Escape') return true;
+  if (k.length === 1) return true;        /* any printable char, incl space */
+  return k === 'Enter' || k === 'Tab' || k === 'Backspace' || k === 'Delete';
+}
 
-close.addEventListener('click',function(e){ 
-  e.preventDefault(); e.stopPropagation(); cleanup(); }, {capture:true});
+function cleanup(){
+  if (m && m.parentNode) m.parentNode.removeChild(m);
+  document.removeEventListener('click', closeHandler, true);
+  document.removeEventListener('keydown', keyHandler, true);
+  if (close) close.removeEventListener('click', onCloseClick, { capture:true });
+}
+
+function closeHandler(evt) { if (!m || !m.contains(evt.target)) cleanup() }
+function keyHandler(e) { if (isTypingKey(e)) cleanup() }
+
+function onCloseClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  cleanup();
+}
+
+if (close) close.addEventListener('click', onCloseClick, { capture:true });
+
+/* Delay to avoid immediately catching the opening click */
 setTimeout(function(){
-  document.addEventListener('click',closeHandler,true); 
-  document.addEventListener('keyup',keyHandler,true); 
-},10);
+  document.addEventListener('click', closeHandler, true);
+  document.addEventListener('keydown', keyHandler, true);
+}, 10);
 
 },100); /* end of setTimeout */
 
