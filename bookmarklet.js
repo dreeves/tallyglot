@@ -3,7 +3,6 @@ javascript:(function(){
 setTimeout(function(){
 
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
-var EG="paste text here that shouldn't get counted in the word count  ";
 var ET='END_WORDCOUNT_EXCLUSION';
 
 /* Selector config: try these in order to find content */
@@ -235,24 +234,44 @@ if(exclusionTexts.length>0){
 var copy=document.createElement('button');
 copy.id='wc-copy'; copy.type='button';
 copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
-copy.textContent='Copy exclusion tags';
-copy.addEventListener('click',function(){
+
+function getSelectedTextInPreview(){
   var sel=window.getSelection();
-  var selectedText='';
   if(sel&&sel.rangeCount>0&&sel.toString().trim()){
     var range=sel.getRangeAt(0);
     if(preview.contains(range.commonAncestorContainer)){
-      selectedText=sel.toString();
+      return sel.toString();
     }
   }
-  var middleText=selectedText||EG;
-  var lines=[ST, middleText, ET];
+  return '';
+}
+
+function updateCopyButton(){
+  var hasSelection=!!getSelectedTextInPreview();
+  if(hasSelection){
+    copy.style.background='#e3f2fd';
+    copy.style.color='#1976D2';
+    copy.style.cursor='pointer';
+    copy.textContent='Copy exclusion tags';
+  }else{
+    copy.style.background='#f5f5f5';
+    copy.style.color='#999';
+    copy.style.cursor='default';
+    copy.textContent='Highlight text to exclude from wordcount';
+  }
+}
+
+updateCopyButton();
+document.addEventListener('selectionchange',updateCopyButton);
+
+copy.addEventListener('click',function(){
+  var selectedText=getSelectedTextInPreview();
+  if(!selectedText)return;
+  var lines=[ST, selectedText, ET];
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
   copy.style.background='#c8e6c9';
-  copy.textContent='Copied';
-  setTimeout(function(){
-    copy.style.background='#e3f2fd';
-    copy.textContent='Copy exclusion tags';},1500);
+  copy.textContent='Copied! Now paste it at the end of your doc';
+  /* setTimeout(function(){updateCopyButton();},1500); */
 });
 
 m.appendChild(header); 
@@ -263,10 +282,13 @@ document.body.appendChild(m);
 
 function isTypingKey(e){
   if (e.ctrlKey || e.altKey || e.metaKey) return false; /* Shift is allowed */
-  const k = e.key || '';
-  if (k === 'Escape') return true;
-  if (k.length === 1) return true;        /* any printable char, incl space */
-  return k === 'Enter' || k === 'Tab' || k === 'Backspace' || k === 'Delete';
+  var k = e.key || '';
+  return k.length === 1 /* any printable char, incl space */
+      || k === 'Escape'
+      || k === 'Enter' 
+      || k === 'Tab' 
+      || k === 'Backspace' 
+      || k === 'Delete'
 }
 
 function cleanup(){
