@@ -84,7 +84,8 @@ function wordcount(text){
   var flagRE=/^[\u{1F1E6}-\u{1F1FF}]{2}$/u;
   var keycapRE=/^(?:[0-9#*]\uFE0F?\u20E3)$/u;
   var letterNumMark=/[\p{L}\p{N}\p{M}]/u;
-  var apostrophe=/^['’]$/u;
+  var apostrophe=/^['']$/u;
+  var hyphen=/^-$/u;
 
   var inWord=false,cnt=0;
   for(var i=0;i<graphemes.length;i++){
@@ -94,6 +95,7 @@ function wordcount(text){
     var isWordChar=isEmoji||letterNumMark.test(g);
     if(isWordChar){ if(!inWord){ inWord=true; cnt++; } }
     else if(apostrophe.test(g)&&inWord){ /* keep word open */ }
+    else if(hyphen.test(g)&&inWord){ /* keep word open for hyphenated words */ }
     else { inWord=false; }
   }
   return cnt;
@@ -120,7 +122,8 @@ function matchGraphemesFallback(s){
 }
 
 var t=sanitize(bodyText).trim();
-if(title && t.indexOf(title)!==0) t=title+' '+t;
+var sanitizedTitle=sanitize(title).trim();
+if(sanitizedTitle && t.indexOf(sanitizedTitle)!==0) t=sanitizedTitle+' '+t;
 
 function getPrefixToFirst(s){ 
   var fi=s.indexOf(ST); 
