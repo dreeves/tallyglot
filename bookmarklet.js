@@ -3,49 +3,43 @@ javascript:(function(){
 setTimeout(function(){
 
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
-var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
+var EG="paste text here that shouldn't get counted in the word count  ";
 var ET='END_WORDCOUNT_EXCLUSION';
 
-var title='',
-  h1=document.querySelector('h1,.PostsPage-title'),
-  tt=document.querySelector('title'),
-  ghTitle=document.querySelector('input[name="issue[title]"]')
-        ||document.querySelector('#issue_title')
-        ||document.querySelector('input[aria-label*="Title"]')
-        ||document.querySelector('input[placeholder*="Title"]'),
-  ghBody=document.querySelector('textarea[name="issue[body]"]')
-       ||document.querySelector('#issue_body')
-       ||document.querySelector('textarea[aria-label*="description"]')
-       ||document.querySelector('textarea.comment-form-textarea');
-  
-if(ghTitle&&ghTitle.value){title=ghTitle.value.trim()}
-else if(h1){title=(h1.innerText||h1.textContent).trim()}
-else if(tt){title=(tt.innerText||tt.textContent).trim()}
-
-/* Part of a vain attempt to make this work on google docs */
-var ogDesc=document.querySelector('meta[property="og:description"]');
-if(ogDesc)
-  console.log('og:description content:', ogDesc.getAttribute('content'));
+/* Selector config: try these in order to find content */
+var contentSelectors=[
+  'textarea[name="issue[body]"]',    /* GitHub issues */
+  '#issue_body',
+  'textarea[aria-label*="description"]',
+  'textarea.comment-form-textarea',
+  'article',                          /* Blog posts */
+  'main',
+  '.PostsPage-postContent',
+  '.PostBody-root',
+  '.content',
+  'body'
+];
 
 var bodyText='';
-if(ghBody&&ghBody.value){
-  bodyText=ghBody.value;
-}else{
-  var sels=['article','main',
-            '.PostsPage-postContent',
-            '.PostBody-root','.content','body'],e=null;
-  for(var i=0;i<sels.length;i++){e=document.querySelector(sels[i]);if(e){break}}
-  if(!e)e=document.body;
-  var c=e.cloneNode(true);
+for(var i=0;i<contentSelectors.length;i++){
+  var el=document.querySelector(contentSelectors[i]);
+  if(!el)continue;
+  /* For textareas/inputs, use .value */
+  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
+    bodyText=el.value||'';
+    break;
+  }
+  /* For other elements, clone and extract text */
+  var c=el.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe')
    .forEach(function(x){x.remove();});
   var blocks=c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br');
-  blocks.forEach(function(b,idx){
-    /* NB: w/out spaces around % the browser treats % as percent-encoding */
+  blocks.forEach(function(b){
     if(b.tagName==='BR'){b.replaceWith(document.createTextNode(' '));}
-    else{b.insertAdjacentText('afterend',' ');} 
+    else{b.insertAdjacentText('afterend',' ');}
   });
   bodyText=(c.innerText||c.textContent);
+  if(bodyText.trim())break;
 }
 
 /* Sanitize for word counting:
@@ -122,8 +116,6 @@ function matchGraphemesFallback(s){
 }
 
 var t=sanitize(bodyText).trim();
-var sanitizedTitle=sanitize(title).trim();
-if(sanitizedTitle && t.indexOf(sanitizedTitle)!==0) t=sanitizedTitle+' '+t;
 
 function getPrefixToFirst(s){ 
   var fi=s.indexOf(ST); 
@@ -245,7 +237,7 @@ copy.id='wc-copy'; copy.type='button';
 copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
 copy.textContent='Copy exclusion tags';
 copy.addEventListener('click',function(){
-  var lines=[ST, EXAMPLE_EXCLUSION, ET];
+  var lines=[ST, EG, ET];
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
   copy.style.background='#c8e6c9';
   copy.textContent='Copied';
