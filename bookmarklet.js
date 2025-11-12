@@ -2,8 +2,6 @@ javascript:(function(){
   
 setTimeout(function(){
 
-console.log('[WC] Bookmarklet started');
-
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var EXAMPLE_EXCLUSION="paste text here that shouldn't get counted in the word count  \n(notice how this text has 33 words which get subtracted from the count per occurrence of this text in the main text)  ";
 var ET='END_WORDCOUNT_EXCLUSION';
@@ -20,9 +18,9 @@ var title='',
        ||document.querySelector('textarea[aria-label*="description"]')
        ||document.querySelector('textarea.comment-form-textarea');
   
-if(ghTitle&&ghTitle.value){ title=ghTitle.value.trim();}
-else if(h1){title=(h1.innerText||h1.textContent).trim();}
-else if(tt){title=(tt.innerText||tt.textContent).trim();}
+if(ghTitle&&ghTitle.value){title=ghTitle.value.trim()}
+else if(h1){title=(h1.innerText||h1.textContent).trim()}
+else if(tt){title=(tt.innerText||tt.textContent).trim()}
 
 /* Part of a vain attempt to make this work on google docs */
 var ogDesc=document.querySelector('meta[property="og:description"]');
@@ -141,7 +139,6 @@ function getAllExclusionTexts(s){
 function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
   
 function countOccurrences(text,searchFor){
-  console.log('[WC] countOccurrences called for "',searchFor,'" in text length',text.length);
   var norm=normalizeWS(searchFor).toLowerCase();
   console.log('[WC] Normalized searchFor:',norm);
   if(!norm)return 0; /* avoid infinite loop if norm is empty */
