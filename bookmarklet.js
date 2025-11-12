@@ -78,7 +78,7 @@ function wordcount(text){
   var flagRE=/^[\u{1F1E6}-\u{1F1FF}]{2}$/u;
   var keycapRE=/^(?:[0-9#*]\uFE0F?\u20E3)$/u;
   var letterNumMark=/[\p{L}\p{N}\p{M}]/u;
-  var apostrophe=/^['']$/u;
+  var apostrophe=/^['\u2018\u2019\u02BC\u2032\u201B\u02BB]$/u;
   var hyphen=/^-$/u;
 
   var inWord=false,cnt=0;
