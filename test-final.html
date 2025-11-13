@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Final Newline Test</title>
+  <script>
+    // Simulate the extraction logic
+    function testExtraction() {
+      const source = document.getElementById('source');
+      const c = source.cloneNode(true);
+      
+      // Remove unwanted elements
+      c.querySelectorAll('script,style,nav,footer,header,iframe').forEach(x => x.remove());
+      
+      // Add newlines after block elements
+      c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th,br').forEach(el => {
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'br') el.textContent = '\n';
+        else el.insertAdjacentText('afterend', '\n');
+      });
+      
+      const extracted = c.innerText || c.textContent;
+      
+      // Sanitize
+      let sanitized = extracted;
+      sanitized = sanitized.replace(/\r\n?/g, '\n');
+      sanitized = sanitized.replace(/[ \t\f\v]+/g, ' ');
+      sanitized = sanitized.replace(/[ \t\f\v]*\n[ \t\f\v]*/g, '\n');
+      sanitized = sanitized.replace(/\n{3,}/g, '\n\n');
+      
+      // Display
+      const output = document.getElementById('output');
+      output.textContent = sanitized;
+      
+      // Debug
+      document.getElementById('debug').textContent = 
+        'Raw extracted: ' + JSON.stringify(extracted) + 
+        '\n\nSanitized: ' + JSON.stringify(sanitized) +
+        '\n\nExpected:\n' +
+        '  Para 1\n  Para 2\n  Line within\n  para';
+    }
+  </script>
+</head>
+<body>
+  <h2>Source (Rich Text Editor)</h2>
+  <div id="source" contenteditable="true">
+    <p>First paragraph.</p>
+    <p>Second paragraph.</p>
+    <p>Line within para<br>continues here.</p>
+  </div>
+  
+  <button onclick="testExtraction()">Extract</button>
+  
+  <h2>Output (with white-space:pre-wrap)</h2>
+  <div id="output" style="white-space:pre-wrap;background:#f5f5f5;border:1px solid #ccc;padding:8px;font-family:monospace;"></div>
+  
+  <h2>Debug</h2>
+  <pre id="debug" style="background:#eee;padding:8px;font-size:11px;"></pre>
+</body>
+</html>

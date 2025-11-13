@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head><title>Auto Test</title></head>
+<body>
+<h2>Results</h2>
+<pre id="results"></pre>
+
+<script>
+const tests = [
+  {name: 'Standard <p> tags', html: '<p>Para 1</p><p>Para 2</p>'},
+  {name: 'Nested divs', html: '<div><div>Para 1</div><div>Para 2</div></div>'},
+  {name: 'BR single', html: 'Line 1<br>Line 2'},
+  {name: 'BR double (para)', html: 'Para 1<br><br>Para 2'},
+  {name: 'Mixed', html: '<p>Para</p><div>Another</div>'},
+];
+
+let output = '';
+
+tests.forEach(test => {
+  const div = document.createElement('div');
+  div.innerHTML = test.html;
+  
+  // Apply our transformation
+  const blocks = div.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6');
+  blocks.forEach((el, i) => {
+    if (i < blocks.length - 1) el.insertAdjacentText('afterend', '\n\n');
+    else el.insertAdjacentText('afterend', '\n');
+  });
+  div.querySelectorAll('br,li,td,th').forEach(el => {
+    if (el.tagName.toLowerCase() === 'br') el.textContent = '\n';
+    else el.insertAdjacentText('afterend', '\n');
+  });
+  
+  const extracted = div.innerText || div.textContent;
+  
+  // Sanitize
+  let sanitized = extracted.replace(/\r\n?/g, '\n')
+    .replace(/[ \t\f\v]+/g, ' ')
+    .replace(/[ \t\f\v]*\n[ \t\f\v]*/g, '\n')
+    .replace(/\n{3,}/g, '\n\n');
+  
+  output += test.name + ':\n  ' + JSON.stringify(sanitized) + '\n\n';
+});
+
+document.getElementById('results').textContent = output;
+</script>
+</body>
+</html>

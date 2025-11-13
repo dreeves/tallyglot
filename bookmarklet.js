@@ -1,4 +1,4 @@
-javascript:(/* v2025.11.12-o tallyglot */function(){setTimeout(function(){
+javascript:(/* v2025.11.12-s tallyglot */function(){setTimeout(function(){
 
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
@@ -30,6 +30,15 @@ for(var i=0;i<contentSelectors.length;i++){
   var c=el.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe')
    .forEach(function(x){x.remove();});
+  /* Add double newlines after block elements for paragraph spacing */
+  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){
+    el.insertAdjacentText('afterend','\n\n');
+  });
+  /* Replace BR with newline */
+  c.querySelectorAll('br').forEach(function(br){
+    var tn=document.createTextNode('\n');
+    br.parentNode.replaceChild(tn,br);
+  });
   bodyText=(c.innerText||c.textContent);
   if(bodyText.trim())break;
 }
