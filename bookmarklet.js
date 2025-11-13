@@ -1,6 +1,4 @@
-javascript:(/* v2025.11.12-c tallyglot */function(){
-  
-setTimeout(function(){
+javascript:(/* v2025.11.12-d tallyglot */function(){setTimeout(function(){
 
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
@@ -254,7 +252,7 @@ function cleanup(){
   if (m && m.parentNode) m.parentNode.removeChild(m);
   document.removeEventListener('click', closeHandler, true);
   document.removeEventListener('keydown', keyHandler, true);
-  if (close) close.removeEventListener('click', onCloseClick, { capture:true });
+  if (close) close.removeEventListener('click', onCloseClick, {capture:true});
 }
 
 function closeHandler(evt) { if (!m || !m.contains(evt.target)) cleanup() }
@@ -271,5 +269,4 @@ setTimeout(function(){
 }, 10);
 
 },100); /* end of setTimeout */
-
-})();
+})(); /* end of IIFE, end of tallyglot bookmarklet */
