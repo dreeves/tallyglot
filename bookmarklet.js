@@ -1,4 +1,4 @@
-javascript:(/* v2025.11.12-s tallyglot */function(){setTimeout(function(){
+javascript:(/* v2025.11.13-h tallyglot */function(){setTimeout(function(){
 
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
@@ -30,16 +30,18 @@ for(var i=0;i<contentSelectors.length;i++){
   var c=el.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe')
    .forEach(function(x){x.remove();});
-  /* Add double newlines after block elements for paragraph spacing */
-  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){
-    el.insertAdjacentText('afterend','\n\n');
-  });
-  /* Replace BR with newline */
+  /* Replace BR with placeholder to preserve line breaks */
   c.querySelectorAll('br').forEach(function(br){
-    var tn=document.createTextNode('\n');
+    var tn=document.createTextNode('¶BR¶');
     br.parentNode.replaceChild(tn,br);
   });
+  /* Add placeholder after block elements for paragraph spacing */
+  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){
+    el.insertAdjacentText('afterend','¶PARA¶');
+  });
   bodyText=(c.innerText||c.textContent);
+  /* Convert placeholders to actual newlines */
+  bodyText=bodyText.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
   if(bodyText.trim())break;
 }
 
@@ -71,8 +73,9 @@ function wordcount(text){
   text=sanitize(text);
   if(!text)return 0;
   var tokens=text.split(/\s+/);
-  var EP=tryRe('\\p{Extended_Pictographic}');
-  var emojiPattern=EP||/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u;
+  var emojiPattern;
+  try{emojiPattern=new RegExp('\\p{Extended_Pictographic}','u')}
+  catch{emojiPattern=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u}
   var meatPattern=/[\p{L}\p{N}]/u;
   var cnt=0;
   for(var i=0;i<tokens.length;i++){
@@ -81,9 +84,6 @@ function wordcount(text){
   }
   return cnt;
 }
-
-/* Helpers */
-function tryRe(src){ try{return new RegExp(src,'u')}catch{return null} }
 
 var t=sanitize(bodyText).trim();
 
@@ -103,31 +103,30 @@ function getAllExclusionTexts(s){
   return exclusions;
 }
   
-function normalizeWS(s){return s.replace(/\s+/g,' ').trim()}
-  
 function countOccurrences(text,searchFor){
-  var norm=normalizeWS(searchFor).toLowerCase();
-  if(!norm)return 0; /* avoid infinite loop if norm is empty */
-  var textNorm=normalizeWS(text).toLowerCase();
+  var norm=searchFor.replace(/\s+/g,' ').trim().toLowerCase();
+  if(!norm)return 0;
+  var textNorm=text.replace(/\s+/g,' ').trim().toLowerCase();
   var count=0,idx=0;
   while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length}
   return count;
 }
 function escHtml(s){return String(s).replace(/&/g,'&amp;')
                                     .replace(/</g,'&lt;')
-                                    .replace(/>/g,'&gt;')}function highlightExcluded(s,exclusionTexts){
-  if(!exclusionTexts.length)return escHtml(s);
-  var sNorm=normalizeWS(s).toLowerCase();
-  var hasMatch=exclusionTexts.some(function(e){
-    return sNorm.indexOf(normalizeWS(e).toLowerCase())!==-1;
-  });
-  if(!hasMatch)return escHtml(s);
+                                    .replace(/>/g,'&gt;')}
+function highlightExcluded(s,exclusionTexts){
   var result=escHtml(s);
-  exclusionTexts.forEach(function(excl){
-    var pattern=escHtml(excl).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
-    result=result.replace(new RegExp(pattern,'gi'),'<span style="color:#d32f2f;text-decoration:line-through;">$&</span>');
-  });
-  return result;
+  if(exclusionTexts.length){
+    exclusionTexts.forEach(function(excl){
+      /* Trim exclusion text to avoid edge whitespace issues */
+      excl=excl.trim();
+      var pattern=escHtml(excl).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
+      result=result.replace(new RegExp(pattern,'gi'),'<span style="color:#d32f2f;text-decoration:line-through;">$&</span>');
+    });
+  }
+  /* Convert newlines to HTML: paragraph breaks (double) get spacing, line breaks get <br> */
+  return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>')
+               .replace(/\n/g,'<br>');
 }
 
 var prefix=getPrefixToFirst(t);
@@ -172,7 +171,7 @@ if(subtractTerms.length>0){
 
 var preview=document.createElement('div');
 preview.className='wc-preview';
-preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.4;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;white-space:pre-wrap;word-break:break-word;';
+preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.2;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;word-break:break-word;';
 preview.innerHTML=highlightExcluded(prefix,exclusionTexts);
 
 var copy=document.createElement('button');
@@ -213,7 +212,6 @@ copy.addEventListener('click',function(){
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
   copy.style.background='#c8e6c9';
   copy.textContent='Copied! Now hit paste at the end of your doc';
-  /* setTimeout(function(){updateCopyButton();},1500); */
 });
 
 m.appendChild(header); 

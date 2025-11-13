@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tallyglot Test - Line Breaks vs Paragraph Breaks</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .test-content {
+      border: 2px solid #ddd;
+      padding: 20px;
+      background: #f9f9f9;
+      margin: 20px 0;
+    }
+    .expected {
+      background: #e3f2fd;
+      padding: 15px;
+      border-left: 4px solid #2196F3;
+      margin: 20px 0;
+    }
+    .instructions {
+      background: #fff3cd;
+      padding: 15px;
+      border-left: 4px solid #ffc107;
+      margin: 20px 0;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tallyglot Line Break Test</h1>
+
+  <div class="instructions">
+    <strong>Instructions:</strong>
+    <ol>
+      <li>Drag the tallyglot bookmarklet to your bookmarks bar (or copy the code from bookmarklet.js)</li>
+      <li>Click the bookmarklet on this page</li>
+      <li>The popup should show the text below with:
+        <ul>
+          <li><code>&lt;br&gt;</code> tags displayed as simple line breaks</li>
+          <li><code>&lt;p&gt;</code> tags displayed as paragraph breaks (with visible spacing)</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+
+  <div class="expected">
+    <strong>Expected word count:</strong> 69 words<br>
+    (According to Google Docs)
+  </div>
+
+  <article class="test-content">
+    <p>This is a test<br />
+file with some normal prose.<br />
+It&#8217;s full of words with apostrophes, &#8220;quotes&#8221;, hyphen-laden words&thinsp;&mdash;&thinsp;you name it.
+Even 😀 emoji, which should count as words.
+But two emoji in a row shouldn&#8217;t count as two words unless there&#8217;s space in between. 👍👍</p>
+
+    <p>Google docs says this has 69 words (including all this, but not including either instance of the excluded prefix), so hopefully we match?</p>
+  </article>
+
+  <h2>Visual Check</h2>
+  <p>When you click the bookmarklet, the preview should show:</p>
+  <ul>
+    <li>Line 1: "This is a test"</li>
+    <li>Line 2: "file with some normal prose." (just a line break, not a paragraph break)</li>
+    <li>Line 3: "It's full of words..." (just a line break, not a paragraph break)</li>
+    <li>Line 4: "Even 😀 emoji..." (continues in same paragraph)</li>
+    <li>Line 5: "But two emoji..." (continues in same paragraph)</li>
+    <li><em>Visible spacing (paragraph break)</em></li>
+    <li>Next paragraph: "Google docs says..."</li>
+  </ul>
+
+</body>
+</html>
