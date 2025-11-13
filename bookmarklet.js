@@ -1,22 +1,22 @@
-javascript:(function(){
+javascript:(/* v2025.11.12-c tallyglot */function(){
   
 setTimeout(function(){
 
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 
-/* Selector config: try these in order to find content */
+/* Selector config: try these in order to find prose to wordcount*/
 var contentSelectors=[
-  'textarea[name="issue[body]"]',    /* GitHub issues */
+  'textarea[name="issue[body]"]', /* gissues */
   '#issue_body',
   'textarea[aria-label*="description"]',
   'textarea.comment-form-textarea',
-  'article',                          /* Blog posts */
+  'article',
   'main',
   '.PostsPage-postContent',
   '.PostBody-root',
   '.content',
-  'body'
+  'body',
 ];
 
 var bodyText='';
@@ -41,17 +41,17 @@ for(var i=0;i<contentSelectors.length;i++){
   if(bodyText.trim())break;
 }
 
-/* Sanitize for word counting:
-   - NFC normalize; CRLF -> \n
-   - Convert Unicode spaces to ASCII space (LSEP/PSEP -> \n)
-   - Drop invisibles (BOM, ZWSP, SHY, bidi controls, isolates)
-   - KEEP emoji machinery: ZWJ (U+200D) and VS16 (U+FE0F) */
+/* Not sure if this is necessary...
+  - NFC normalize; CRLF -> \n
+  - Convert Unicode spaces to ASCII space (LSEP/PSEP -> \n)
+  - Drop invisibles (BOM, ZWSP, SHY, bidi controls, isolates)
+  - KEEP emoji machinery: ZWJ (U+200D) and VS16 (U+FE0F) */
 function sanitize(s){
   s=String(s??'');
   if(s.normalize)s=s.normalize('NFC');
   s=s.replace(/\r\n?/g,'\n');
   s=s.replace(
-    /[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
+        /[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
   s=s.replace(/[\u2028\u2029]/g,'\n');
   s=s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g,' ');
   s=s.replace(/[ \t\f\v]+/g,' ');
@@ -59,7 +59,7 @@ function sanitize(s){
   return s;
 }
 
-/* Word count:
+/* Word count algorithm:
   - Split by whitespace into tokens
   - Count tokens with at least one "meat" character
   - Meat = letters (\p{L}), numbers (\p{N}), or emoji
@@ -67,18 +67,14 @@ function sanitize(s){
 function wordcount(text){
   text=sanitize(text);
   if(!text)return 0;
-
   var tokens=text.split(/\s+/);
   var EP=tryRe('\\p{Extended_Pictographic}');
   var emojiPattern=EP||/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u;
   var meatPattern=/[\p{L}\p{N}]/u;
-
   var cnt=0;
   for(var i=0;i<tokens.length;i++){
     var token=tokens[i];
-    if(token&&(meatPattern.test(token)||emojiPattern.test(token))){
-      cnt++;
-    }
+    if(token&&(meatPattern.test(token)||emojiPattern.test(token))){cnt++}
   }
   return cnt;
 }
@@ -104,22 +100,19 @@ function getAllExclusionTexts(s){
   return exclusions;
 }
   
-function normalizeWS(s){return s.replace(/\s+/g,' ').trim();}
+function normalizeWS(s){return s.replace(/\s+/g,' ').trim()}
   
 function countOccurrences(text,searchFor){
   var norm=normalizeWS(searchFor).toLowerCase();
-  console.log('[WC] Normalized searchFor:',norm);
   if(!norm)return 0; /* avoid infinite loop if norm is empty */
   var textNorm=normalizeWS(text).toLowerCase();
-  console.log('[WC] Normalized text length:',textNorm.length);
   var count=0,idx=0;
-  while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length;}
+  while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length}
   return count;
 }
-function escHtml(s){ 
-  return String(s).replace(/&/g,'&amp;')
-                  .replace(/</g,'&lt;')
-                  .replace(/>/g,'&gt;'); }
+function escHtml(s){return String(s).replace(/&/g,'&amp;')
+                                    .replace(/</g,'&lt;')
+                                    .replace(/>/g,'&gt;')}
 function highlightExcluded(s,exclusionTexts){
   var sNorm=normalizeWS(s);
   var sNormLower=sNorm.toLowerCase();
@@ -151,21 +144,17 @@ function highlightExcluded(s,exclusionTexts){
 var prefix=getPrefixToFirst(t);
 var exclusionTexts=getAllExclusionTexts(t);
 var x=wordcount(prefix);
-console.log('[WC] Total words before exclusions:',x);
 var subtractTerms=[],totalSubtraction=0;
 for(var i=0;i<exclusionTexts.length;i++){
   var excl=exclusionTexts[i];
   var y=wordcount(excl);
-  console.log('[WC] Exclusion',i+1,': "',excl,'" =>',y,'words');
   var n=countOccurrences(prefix,excl);
-  console.log('[WC] Occurrences in prefix:',n);
   if(n>0){
     subtractTerms.push(y.toLocaleString()+'*'+n.toLocaleString());
     totalSubtraction+=n*y;
   }
 }
 var result=x-totalSubtraction;
-console.log('[WC] Final word count after exclusions:',result);
 
 var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
@@ -211,9 +200,7 @@ function getSelectedTextInPreview(){
   var sel=window.getSelection();
   if(sel&&sel.rangeCount>0&&sel.toString().trim()){
     var range=sel.getRangeAt(0);
-    if(preview.contains(range.commonAncestorContainer)){
-      return sel.toString();
-    }
+    if(preview.contains(range.commonAncestorContainer)){return sel.toString()}
   }
   return '';
 }
@@ -242,7 +229,7 @@ copy.addEventListener('click',function(){
   var lines=[ST, selectedText, ET];
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
   copy.style.background='#c8e6c9';
-  copy.textContent='Copied! Now paste it at the end of your doc';
+  copy.textContent='Copied! Now hit paste at the end of your doc';
   /* setTimeout(function(){updateCopyButton();},1500); */
 });
 
@@ -273,15 +260,11 @@ function cleanup(){
 function closeHandler(evt) { if (!m || !m.contains(evt.target)) cleanup() }
 function keyHandler(e) { if (isTypingKey(e)) cleanup() }
 
-function onCloseClick(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  cleanup();
-}
+function onCloseClick(e){e.preventDefault();e.stopPropagation();cleanup()}
 
-if (close) close.addEventListener('click', onCloseClick, { capture:true });
+if (close) close.addEventListener('click', onCloseClick, {capture:true});
 
-/* Delay to avoid immediately catching the opening click */
+/* Delay to avoid immediately catching the opening click, apparently */
 setTimeout(function(){
   document.addEventListener('click', closeHandler, true);
   document.addEventListener('keydown', keyHandler, true);
