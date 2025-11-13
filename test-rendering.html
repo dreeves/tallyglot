@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Newline Test</title>
+</head>
+<body>
+  <h2>Test Input (from LessWrong-style editor)</h2>
+  <div id="source" contenteditable="true">
+    <p>First paragraph.</p>
+    <p>Second paragraph.</p>
+    <p>Line within paragraph<br>continues here.</p>
+  </div>
+
+  <button onclick="runTest()">Extract & Display</button>
+
+  <h2>Output Preview</h2>
+  <div id="output" style="font-family:monospace;background:#f5f5f5;padding:8px;white-space:pre-wrap;border:1px solid #ccc;"></div>
+
+  <h2>Debug Info</h2>
+  <pre id="debug" style="background:#eee;padding:8px;font-size:11px;"></pre>
+
+  <script>
+    function sanitize(s) {
+      s = String(s ?? '');
+      if (s.normalize) s = s.normalize('NFC');
+      s = s.replace(/\r\n?/g, '\n');
+      s = s.replace(
+        /[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '');
+      s = s.replace(/[\u2028\u2029]/g, '\n');
+      s = s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
+      s = s.replace(/[ \t\f\v]+/g, ' ');
+      s = s.replace(/[ \t\f\v]*\n[ \t\f\v]*/g, '\n');
+      s = s.replace(/\n{3,}/g, '\n\n');  // Current code
+      return s;
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function runTest() {
+      const el = document.getElementById('source');
+      const c = el.cloneNode(true);
+      
+      // Add newlines like the bookmarklet does
+      const paras = c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6');
+      paras.forEach(p => p.insertAdjacentText('beforebegin', '\n\n'));
+      const lines = c.querySelectorAll('br,li,td,th');
+      lines.forEach(l => l.insertAdjacentText('beforebegin', '\n'));
+      
+      const extracted = c.innerText || c.textContent;
+      const sanitized = sanitize(extracted);
+      const escaped = escHtml(sanitized);
+      
+      document.getElementById('output').innerHTML = escaped;
+      
+      document.getElementById('debug').textContent = 
+        'Raw extracted:\n' + JSON.stringify(extracted) + 
+        '\n\nAfter sanitize:\n' + JSON.stringify(sanitized) +
+        '\n\nExpected:\n' +
+        '  Single newlines should be line breaks\n' +
+        '  Double newlines should have paragraph spacing';
+    }
+  </script>
+</body>
+</html>
