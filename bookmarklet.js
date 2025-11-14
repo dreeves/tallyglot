@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.13-z';
+var VER='2025.11.14-d';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -9,8 +9,9 @@ var ET='END_WORDCOUNT_EXCLUSION';
 /* Selector config: try these in order to find prose to wordcount */
 var contentSelectors=[
   '.content', /* LessWrong */
-  'textarea[aria-label="Markdown value"]', /* gissue body */
-  'body', /* plain html page */
+  'textarea[aria-label="Markdown value"]', /* gissue */
+  '.tiptap[contenteditable="true"]', /* Substack */
+  'body',
   'textarea.MuiTextarea-textarea:not([aria-hidden])', /* LessWrong title */
   'input[aria-label="Add a title"]', /* gissue title */
   'textarea[aria-label*="description"]',
@@ -26,21 +27,17 @@ for(var i=0;i<contentSelectors.length;i++){
   var el=document.querySelector(contentSelectors[i]);
   if(!el)continue;
   sel=contentSelectors[i];
-  /* For textareas/inputs, use .value */
+  /* textareas/inputs: use .value */
   if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){bodyText=el.value||'';break}
-  /* For other elements, clone and extract text */
+  /* other elements: clone & extract text */
   var c=el.cloneNode(true);
-  c.querySelectorAll('script,style,nav,footer,header,iframe')
-   .forEach(function(x){x.remove();});
-  /* Replace BR w/ placeholder to preserve line breaks */
+  c.querySelectorAll('script,style,nav,footer,header,iframe').forEach(function(x){x.remove()});
+  /* preserve line breaks, paragraph breaks */
   c.querySelectorAll('br').forEach(function(br){
     var tn=document.createTextNode('¶BR¶');
     br.parentNode.replaceChild(tn,br);
   });
-  /* Add placeholder after block elements for paragraph spacing */
-  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){
-    el.insertAdjacentText('afterend','¶PARA¶');
-  });
+  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){el.insertAdjacentText('afterend','¶PARA¶')});
   bodyText=(c.innerText||c.textContent);
   /* Placeholders back to newlines */
   bodyText=bodyText.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
@@ -56,8 +53,7 @@ function sanitize(s){
   s=String(s??'');
   if(s.normalize)s=s.normalize('NFC');
   s=s.replace(/\r\n?/g,'\n');
-  s=s.replace(
-        /[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
+  s=s.replace(/[\u00AD\u200B\u2060\uFEFF\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'');
   s=s.replace(/[\u2028\u2029]/g,'\n');
   s=s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g,' ');
   s=s.replace(/[ \t\f\v]+/g,' ');
@@ -66,23 +62,21 @@ function sanitize(s){
   return s
 }
 
-/* Word count algorithm:
+/* Algorithm:
   - Split by whitespace into tokens
-  - Count tokens with at least one meat character
+  - Count tokens w/ >=1 meat characters
   - Meat = letters (\p{L}), numbers (\p{N}), or emoji
   - Scaffold = apostrophes/hyphens/punctuation */
-function wordcount(text){
-  text=sanitize(text);
-  if(!text)return 0;
-  var tokens=text.split(/\s+/);
-  var pic;
-  try{pic=new RegExp('\\p{Extended_Pictographic}','u')}
+function wordcount(s){
+  s=sanitize(s);if(!s)return 0;
+  var tokens=s.split(/\s+/);
+  var pic;try{pic=new RegExp('\\p{Extended_Pictographic}','u')}
   catch{pic=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u}
   var meat=/[\p{L}\p{N}]/u;
   var n=0;
   for(var i=0;i<tokens.length;i++){
-    var token=tokens[i];
-    if(token&&(meat.test(token)||pic.test(token))){n++}
+    var t=tokens[i];
+    if(t&&(meat.test(t)||pic.test(t)))n++
   }
   return n
 }
@@ -102,25 +96,22 @@ function getExclusions(s){
   return exc
 }
   
-function countOccurrences(text,searchFor){
-  var norm=searchFor.replace(/\s+/g,' ').trim().toLowerCase();
-  if(!norm)return 0;
-  var textNorm=text.replace(/\s+/g,' ').trim().toLowerCase();
+function subcount(txt,sub){
+  var subnorm=sub.replace(/\s+/g,' ').trim();
+  if(!subnorm)return 0;
+  var txtnorm=txt.replace(/\s+/g,' ').trim();
   var n=0,i=0;
-  while((i=textNorm.indexOf(norm,i))!==-1){n++;i+=norm.length}
+  while((i=txtnorm.indexOf(subnorm,i))!==-1){n++;i+=subnorm.length}
   return n
 }
-function escHtml(s){return String(s).replace(/&/g,'&amp;')
-                                    .replace(/</g,'&lt;')
-                                    .replace(/>/g,'&gt;')}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function highlightExcluded(s,exs){
   var result=escHtml(s);
   exs.forEach(function(excl){
     var pattern=escHtml(excl).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
     result=result.replace(new RegExp(pattern,'gi'),'<span style="color:#d32f2f;text-decoration:line-through;">$&</span>');
   });
-  return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>')
-               .replace(/\n/g,'<br>')
+  return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>').replace(/\n/g,'<br>')
 }
 
 var exs=getExclusions(t);
@@ -129,11 +120,8 @@ var minusTerms=[],s=0;
 for(var i=0;i<exs.length;i++){
   var excl=exs[i];
   var xwc=wordcount(excl);
-  var n=countOccurrences(prefix,excl);
-  if(n>0){
-    minusTerms.push(xwc.toLocaleString()+'×'+n);
-    s+=n*xwc;
-  }
+  var n=subcount(prefix,excl);
+  if(n>0){minusTerms.push(xwc.toLocaleString()+'×'+n);s+=n*xwc}
 }
 var twc=pwc-s;
 
@@ -164,7 +152,8 @@ var copy=document.createElement('button');
 copy.id='wc-copy'; copy.type='button';
 copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
 
-function getSelectedTextInPreview(){
+/* Return whatever text in the popup is highlighted */
+function getsel(){
   var sel=window.getSelection();
   if(sel&&sel.rangeCount>0&&sel.toString().trim()){
     var range=sel.getRangeAt(0);
@@ -173,26 +162,19 @@ function getSelectedTextInPreview(){
   return ''
 }
 
-function updateCopyButton(){
-  var hasSelection=!!getSelectedTextInPreview();
-  if(hasSelection){
-    copy.style.background='#e3f2fd';
-    copy.style.color='#1976D2';
-    copy.style.cursor='pointer';
-    copy.textContent='Copy exclusion tags';
-  }else{
-    copy.style.background='#f5f5f5';
-    copy.style.color='#999';
-    copy.style.cursor='default';
-    copy.textContent='Highlight text to exclude from wordcount';
-  }
+function buttonup(){
+  var hi=!!getsel();
+  copy.style.background=hi?'#e3f2fd':'#f5f5f5';
+  copy.style.color=hi?'#1976D2':'#999';
+  copy.style.cursor=hi?'pointer':'default';
+  copy.textContent=hi?'Copy exclusion tags'
+                     :'Highlight text to exclude from wordcount';
 }
-
-updateCopyButton();
-document.addEventListener('selectionchange',updateCopyButton);
+buttonup();
+document.addEventListener('selectionchange',buttonup);
 
 copy.addEventListener('click',function(){
-  var selectedText=getSelectedTextInPreview();
+  var selectedText=getsel();
   if(!selectedText)return;
   var lines=[ST, selectedText, ET];
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
@@ -211,7 +193,7 @@ dbg.addEventListener('click',function(e){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
     h+='<h3>'+escHtml(s)+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>';
   });
-  h+='<h2>Other Candidates</h2>';
+  h+='<h2>Inputs/Textareas</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
     var v=e.value||'';
     if(v.trim()){
@@ -225,7 +207,19 @@ dbg.addEventListener('click',function(e){
         if(a.name.startsWith('aria-'))arias.push(a.name+'="'+a.value+'"');
       }
       if(arias.length)attrs+=' '+arias.join(' ');
-      h+='<h3>'+escHtml(attrs)+'</h3><pre>'+escHtml(v)+'</pre>';
+      h+='<h3>'+escHtml(attrs)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
+    }
+  });
+  h+='<h2>Contenteditable Elements</h2>';
+  document.querySelectorAll('[contenteditable="true"],[role="textbox"]').forEach(function(e){
+    var v=(e.innerText||e.textContent||'');
+    if(v.trim()){
+      var attrs=e.tagName;
+      if(e.id)attrs+=' #'+e.id;
+      if(e.className)attrs+=' class="'+e.className+'"';
+      if(e.getAttribute('role'))attrs+=' role="'+e.getAttribute('role')+'"';
+      attrs+=' [contenteditable]';
+      h+='<h3>'+escHtml(attrs)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
     }
   });
   w.document.documentElement.innerHTML=h;
@@ -238,11 +232,7 @@ function isTypingKey(e){
   if(e.ctrlKey || e.altKey || e.metaKey) return false; /* Shift is allowed */
   var k = e.key || '';
   return k.length === 1 /* printable chars, incl space */
-      || k === 'Escape'
-      || k === 'Enter' 
-      || k === 'Tab' 
-      || k === 'Backspace' 
-      || k === 'Delete'
+  || k==='Escape' || k==='Enter' || k==='Tab' || k==='Backspace' || k==='Delete'
 }
 
 function cleanup(){
