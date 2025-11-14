@@ -70,7 +70,7 @@ function sanitize(s){
   - Split by whitespace into tokens
   - Count tokens with at least one meat character
   - Meat = letters (\p{L}), numbers (\p{N}), or emoji
-  - Scaffold = apostrophes/hyphens/punctuation (ignored, just along for ride) */
+  - Scaffold = apostrophes/hyphens/punctuation */
 function wordcount(text){
   text=sanitize(text);
   if(!text)return 0;
@@ -79,12 +79,12 @@ function wordcount(text){
   try{pic=new RegExp('\\p{Extended_Pictographic}','u')}
   catch{pic=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u}
   var meat=/[\p{L}\p{N}]/u;
-  var cnt=0;
+  var n=0;
   for(var i=0;i<tokens.length;i++){
     var token=tokens[i];
-    if(token&&(meat.test(token)||pic.test(token))){cnt++}
+    if(token&&(meat.test(token)||pic.test(token))){n++}
   }
-  return cnt
+  return n
 }
 
 var t=sanitize(bodyText).trim();
