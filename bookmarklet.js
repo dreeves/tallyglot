@@ -1,23 +1,24 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.13-p';
+var VER='2025.11.13-x';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 
-/* Selector config: try these in order to find prose to wordcount*/
+/* Selector config: try these in order to find prose to wordcount */
 var contentSelectors=[
-  'textarea[name="issue[body]"]', /* gissues */
-  '#issue_body',
+  '.content', /* LessWrong */
+  'textarea[aria-label="Markdown value"]', /* gissue body */
+  'body', /* plain html page */
+  'textarea.MuiTextarea-textarea:not([aria-hidden])', /* LessWrong title */
+  'input[aria-label="Add a title"]', /* gissue title */
   'textarea[aria-label*="description"]',
   'textarea.comment-form-textarea',
   'article',
   'main',
   '.PostsPage-postContent',
   '.PostBody-root',
-  '.content',
-  'body',
 ];
 
 var bodyText='',sel='';
@@ -26,15 +27,12 @@ for(var i=0;i<contentSelectors.length;i++){
   if(!el)continue;
   sel=contentSelectors[i];
   /* For textareas/inputs, use .value */
-  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
-    bodyText=el.value||'';
-    break;
-  }
+  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){bodyText=el.value||'';break}
   /* For other elements, clone and extract text */
   var c=el.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe')
    .forEach(function(x){x.remove();});
-  /* Replace BR with placeholder to preserve line breaks */
+  /* Replace BR w/ placeholder to preserve line breaks */
   c.querySelectorAll('br').forEach(function(br){
     var tn=document.createTextNode('¶BR¶');
     br.parentNode.replaceChild(tn,br);
@@ -51,7 +49,7 @@ for(var i=0;i<contentSelectors.length;i++){
 
 /* AI-generated black magic:
   - NFC normalize; CRLF -> \n
-  - Convert Unicode spaces to ASCII space (LSEP/PSEP -> \n)
+  - Unicode spaces to ascii (LSEP/PSEP -> \n)
   - Drop invisibles (BOM, ZWSP, SHY, bidi controls, isolates)
   - KEEP emoji machinery: ZWJ (U+200D) and VS16 (U+FE0F) */
 function sanitize(s){
@@ -65,7 +63,7 @@ function sanitize(s){
   s=s.replace(/[ \t\f\v]+/g,' ');
   s=s.replace(/[ \t\f\v]*\n[ \t\f\v]*/g,'\n');
   s=s.replace(/\n{3,}/g,'\n\n');
-  return s;
+  return s
 }
 
 /* Word count algorithm:
@@ -86,7 +84,7 @@ function wordcount(text){
     var token=tokens[i];
     if(token&&(meat.test(token)||pic.test(token))){cnt++}
   }
-  return cnt;
+  return cnt
 }
 
 var t=sanitize(bodyText).trim();
@@ -101,7 +99,7 @@ function getExclusions(s){
     exc.push(s.slice(a+ST.length,b).trim());
     pos=b+ET.length;
   }
-  return exc;
+  return exc
 }
   
 function countOccurrences(text,searchFor){
@@ -110,7 +108,7 @@ function countOccurrences(text,searchFor){
   var textNorm=text.replace(/\s+/g,' ').trim().toLowerCase();
   var n=0,i=0;
   while((i=textNorm.indexOf(norm,i))!==-1){n++;i+=norm.length}
-  return n;
+  return n
 }
 function escHtml(s){return String(s).replace(/&/g,'&amp;')
                                     .replace(/</g,'&lt;')
@@ -122,7 +120,7 @@ function highlightExcluded(s,exs){
     result=result.replace(new RegExp(pattern,'gi'),'<span style="color:#d32f2f;text-decoration:line-through;">$&</span>');
   });
   return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>')
-               .replace(/\n/g,'<br>');
+               .replace(/\n/g,'<br>')
 }
 
 var exs=getExclusions(t);
@@ -174,7 +172,7 @@ function getSelectedTextInPreview(){
     var range=sel.getRangeAt(0);
     if(preview.contains(range.commonAncestorContainer)){return sel.toString()}
   }
-  return '';
+  return ''
 }
 
 function updateCopyButton(){
@@ -210,15 +208,27 @@ dbg.style.cssText='font-size:9px;color:#999;text-align:center;margin-top:8px;tex
 dbg.textContent='[debug]';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
-  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Debug</h1><h2>Match</h2><pre>'+escHtml(sel)+' → '+escHtml(bodyText)+'</pre><h2>All Selectors</h2>';
+  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug</h1><h2>contentSelectors</h2>';
   contentSelectors.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
     h+='<h3>'+escHtml(s)+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>';
   });
-  h+='<h2>All Inputs</h2>';
+  h+='<h2>Other Candidates</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
     var v=e.value||'';
-    if(v.trim())h+='<h3>'+escHtml(e.tagName+(e.name?' name='+e.name:'')+(e.id?' id='+e.id:''))+'</h3><pre>'+escHtml(v)+'</pre>';
+    if(v.trim()){
+      var attrs=e.tagName;
+      if(e.id)attrs+=' #'+e.id;
+      if(e.name)attrs+=' name="'+e.name+'"';
+      if(e.className)attrs+=' class="'+e.className+'"';
+      var arias=[];
+      for(var i=0;i<e.attributes.length;i++){
+        var a=e.attributes[i];
+        if(a.name.startsWith('aria-'))arias.push(a.name+'="'+a.value+'"');
+      }
+      if(arias.length)attrs+=' '+arias.join(' ');
+      h+='<h3>'+escHtml(attrs)+'</h3><pre>'+escHtml(v)+'</pre>';
+    }
   });
   w.document.documentElement.innerHTML=h;
 });
