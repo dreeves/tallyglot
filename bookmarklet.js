@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.13-l';
+var VER='2025.11.13-p';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -20,10 +20,11 @@ var contentSelectors=[
   'body',
 ];
 
-var bodyText='';
+var bodyText='',sel='';
 for(var i=0;i<contentSelectors.length;i++){
   var el=document.querySelector(contentSelectors[i]);
   if(!el)continue;
+  sel=contentSelectors[i];
   /* For textareas/inputs, use .value */
   if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
     bodyText=el.value||'';
@@ -203,7 +204,26 @@ copy.addEventListener('click',function(){
   copy.textContent='Copied! Now hit paste at the end of your doc';
 });
 
-[header,tally,preview,copy].forEach(function(el){m.appendChild(el)});
+var dbg=document.createElement('a');
+dbg.href='#';
+dbg.style.cssText='font-size:9px;color:#999;text-align:center;margin-top:8px;text-decoration:none;';
+dbg.textContent='[debug]';
+dbg.addEventListener('click',function(e){
+  e.preventDefault();
+  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Debug</h1><h2>Match</h2><pre>'+escHtml(sel)+' → '+escHtml(bodyText)+'</pre><h2>All Selectors</h2>';
+  contentSelectors.forEach(function(s){
+    var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
+    h+='<h3>'+escHtml(s)+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>';
+  });
+  h+='<h2>All Inputs</h2>';
+  document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
+    var v=e.value||'';
+    if(v.trim())h+='<h3>'+escHtml(e.tagName+(e.name?' name='+e.name:'')+(e.id?' id='+e.id:''))+'</h3><pre>'+escHtml(v)+'</pre>';
+  });
+  w.document.documentElement.innerHTML=h;
+});
+
+[header,tally,preview,copy,dbg].forEach(function(el){m.appendChild(el)});
 document.body.appendChild(m);
 
 function isTypingKey(e){
