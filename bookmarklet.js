@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.14-e';
+var VER='2025.11.14-f';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -95,15 +95,16 @@ function getExclusions(s){
   }
   return exc
 }
-  
-function subcount(txt,sub){
-  var subnorm=sub.replace(/\s+/g,' ').trim();
-  if(!subnorm)return 0;
-  var txtnorm=txt.replace(/\s+/g,' ').trim();
-  var n=0,i=0;
-  while((i=txtnorm.indexOf(subnorm,i))!==-1){n++;i+=subnorm.length}
-  return n
+
+function nrmlz(s){return String(s||'').replace(/\s+/g,' ').trim()}
+function scount(txt, sub) {
+  var needle=nrmlz(sub);
+  if(!needle)return 0;
+  var haystack=nrmlz(txt);
+  if(!haystack)return 0;
+  return haystack.split(needle).length-1;
 }
+
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function highlightExcluded(s,exs){
   var result=escHtml(s);
@@ -120,7 +121,7 @@ var minusTerms=[],s=0;
 for(var i=0;i<exs.length;i++){
   var excl=exs[i];
   var xwc=wordcount(excl);
-  var n=subcount(prefix,excl);
+  var n=scount(prefix,excl);
   if(n>0){minusTerms.push(xwc.toLocaleString()+'×'+n);s+=n*xwc}
 }
 var twc=pwc-s;
