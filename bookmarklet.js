@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.14-d';
+var VER='2025.11.14-e';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -197,29 +197,22 @@ dbg.addEventListener('click',function(e){
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
     var v=e.value||'';
     if(v.trim()){
-      var attrs=e.tagName;
-      if(e.id)attrs+=' #'+e.id;
-      if(e.name)attrs+=' name="'+e.name+'"';
-      if(e.className)attrs+=' class="'+e.className+'"';
-      var arias=[];
-      for(var i=0;i<e.attributes.length;i++){
-        var a=e.attributes[i];
-        if(a.name.startsWith('aria-'))arias.push(a.name+'="'+a.value+'"');
-      }
-      if(arias.length)attrs+=' '+arias.join(' ');
-      h+='<h3>'+escHtml(attrs)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
+      var sel=e.tagName.toLowerCase();
+      if(e.id)sel+='#'+e.id;
+      if(e.className)sel+='.'+e.className.split(/\s+/).slice(0,2).join('.');
+      if(e.getAttribute('aria-label'))sel+='[aria-label="'+e.getAttribute('aria-label')+'"]';
+      h+='<h3>'+escHtml(sel)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
     }
   });
   h+='<h2>Contenteditable Elements</h2>';
   document.querySelectorAll('[contenteditable="true"],[role="textbox"]').forEach(function(e){
     var v=(e.innerText||e.textContent||'');
     if(v.trim()){
-      var attrs=e.tagName;
-      if(e.id)attrs+=' #'+e.id;
-      if(e.className)attrs+=' class="'+e.className+'"';
-      if(e.getAttribute('role'))attrs+=' role="'+e.getAttribute('role')+'"';
-      attrs+=' [contenteditable]';
-      h+='<h3>'+escHtml(attrs)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
+      var sel=e.tagName.toLowerCase();
+      if(e.id)sel+='#'+e.id;
+      if(e.className)sel+='.'+e.className.split(/\s+/).slice(0,2).join('.');
+      sel+='[contenteditable="true"]';
+      h+='<h3>'+escHtml(sel)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
     }
   });
   w.document.documentElement.innerHTML=h;
