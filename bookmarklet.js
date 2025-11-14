@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.13-x';
+var VER='2025.11.13-z';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -151,11 +151,9 @@ var tally=document.createElement('div');
 tally.className='wc-count';
 tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
 if(minusTerms.length>0){
-  tally.textContent=pwc.toLocaleString()+' - '+minusTerms.join(' - ')+' = '
+  tally.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '
     +twc.toLocaleString();
-}else{
-  tally.textContent=pwc.toLocaleString()+' - 0 = '+twc.toLocaleString();
-}
+}else{tally.textContent=pwc.toLocaleString()+' – 0 = '+twc.toLocaleString()}
 
 var preview=document.createElement('div');
 preview.className='wc-preview';
