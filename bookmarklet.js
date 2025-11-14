@@ -1,5 +1,8 @@
-javascript:(/* v2025.11.13-h tallyglot */function(){setTimeout(function(){
+javascript:(function(){setTimeout(function(){
 
+var VER='2025.11.13-k';
+var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
+  +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 
@@ -86,18 +89,15 @@ function wordcount(text){
 }
 
 var t=sanitize(bodyText).trim();
+var fi=t.indexOf(ST);
+var prefix=t.slice(0,fi===-1?t.length:fi);
 
-function getPrefixToFirst(s){ 
-  var fi=s.indexOf(ST); 
-  return s.slice(0,fi===-1?s.length:fi);
-}
-  
 function getAllExclusionTexts(s){
   var exclusions=[],pos=0;
   while(true){
     var a=s.indexOf(ST,pos),b=a===-1?-1:s.indexOf(ET,a+ST.length);
     if(a===-1||b===-1)break;
-    exclusions.push(s.slice(a+ST.length,b));
+    exclusions.push(s.slice(a+ST.length,b).trim());
     pos=b+ET.length;
   }
   return exclusions;
@@ -114,27 +114,21 @@ function countOccurrences(text,searchFor){
 function escHtml(s){return String(s).replace(/&/g,'&amp;')
                                     .replace(/</g,'&lt;')
                                     .replace(/>/g,'&gt;')}
-function highlightExcluded(s,exclusionTexts){
+function highlightExcluded(s,exs){
   var result=escHtml(s);
-  if(exclusionTexts.length){
-    exclusionTexts.forEach(function(excl){
-      /* Trim exclusion text to avoid edge whitespace issues */
-      excl=excl.trim();
-      var pattern=escHtml(excl).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
-      result=result.replace(new RegExp(pattern,'gi'),'<span style="color:#d32f2f;text-decoration:line-through;">$&</span>');
-    });
-  }
-  /* Convert newlines to HTML: paragraph breaks (double) get spacing, line breaks get <br> */
+  exs.forEach(function(excl){
+    var pattern=escHtml(excl).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
+    result=result.replace(new RegExp(pattern,'gi'),'<span style="color:#d32f2f;text-decoration:line-through;">$&</span>');
+  });
   return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>')
                .replace(/\n/g,'<br>');
 }
 
-var prefix=getPrefixToFirst(t);
-var exclusionTexts=getAllExclusionTexts(t);
+var exs=getAllExclusionTexts(t);
 var x=wordcount(prefix);
 var subtractTerms=[],totalSubtraction=0;
-for(var i=0;i<exclusionTexts.length;i++){
-  var excl=exclusionTexts[i];
+for(var i=0;i<exs.length;i++){
+  var excl=exs[i];
   var y=wordcount(excl);
   var n=countOccurrences(prefix,excl);
   if(n>0){
@@ -149,15 +143,10 @@ m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px
 
 var header=document.createElement('div');
 header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;';
-var label=document.createElement('span'); 
-label.style.cssText='font-size:13px;color:#666;'; 
-label.textContent='Word Count';
-var close=document.createElement('button'); 
-close.type='button'; 
-close.setAttribute('aria-label','Close'); 
-close.style.cssText='border:none;background:none;cursor:pointer;font-size:16px;color:#999;padding:0;width:20px;height:20px;'; 
-close.textContent='x';
-header.appendChild(label); header.appendChild(close);
+var label=document.createElement('span');
+label.style.cssText='font-size:13px;color:#666;display:flex;align-items:center;justify-content:space-between;width:100%';
+label.innerHTML=TOPTEXT;
+header.appendChild(label);
 
 var tally=document.createElement('div');
 tally.className='wc-count';
@@ -172,7 +161,7 @@ if(subtractTerms.length>0){
 var preview=document.createElement('div');
 preview.className='wc-preview';
 preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.2;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;word-break:break-word;';
-preview.innerHTML=highlightExcluded(prefix,exclusionTexts);
+preview.innerHTML=highlightExcluded(prefix,exs);
 
 var copy=document.createElement('button');
 copy.id='wc-copy'; copy.type='button';
@@ -214,10 +203,7 @@ copy.addEventListener('click',function(){
   copy.textContent='Copied! Now hit paste at the end of your doc';
 });
 
-m.appendChild(header); 
-m.appendChild(tally); 
-m.appendChild(preview); 
-m.appendChild(copy);
+[header,tally,preview,copy].forEach(function(el){m.appendChild(el)});
 document.body.appendChild(m);
 
 function isTypingKey(e){
@@ -232,22 +218,17 @@ function isTypingKey(e){
 }
 
 function cleanup(){
-  if (m && m.parentNode) m.parentNode.removeChild(m);
-  document.removeEventListener('click', closeHandler, true);
+  if(m && m.parentNode)m.parentNode.removeChild(m);
+  document.removeEventListener('click', clickHandler, true);
   document.removeEventListener('keydown', keyHandler, true);
-  if (close) close.removeEventListener('click', onCloseClick, {capture:true});
 }
 
-function closeHandler(evt) { if (!m || !m.contains(evt.target)) cleanup() }
-function keyHandler(e) { if (isTypingKey(e)) cleanup() }
-
-function onCloseClick(e){e.preventDefault();e.stopPropagation();cleanup()}
-
-if (close) close.addEventListener('click', onCloseClick, {capture:true});
+function clickHandler(evt){if(!m || !m.contains(evt.target)) cleanup()}
+function keyHandler(e){if(isTypingKey(e)) cleanup()}
 
 /* Delay to avoid immediately catching the opening click, apparently */
 setTimeout(function(){
-  document.addEventListener('click', closeHandler, true);
+  document.addEventListener('click', clickHandler, true);
   document.addEventListener('keydown', keyHandler, true);
 }, 10);
 
