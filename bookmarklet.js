@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.14-f';
+var VER='2025.11.14-g';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -24,8 +24,7 @@ var contentSelectors=[
 
 var bodyText='',sel='';
 for(var i=0;i<contentSelectors.length;i++){
-  var el=document.querySelector(contentSelectors[i]);
-  if(!el)continue;
+  var el=document.querySelector(contentSelectors[i]);if(!el)continue;
   sel=contentSelectors[i];
   /* textareas/inputs: use .value */
   if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){bodyText=el.value||'';break}
@@ -35,13 +34,13 @@ for(var i=0;i<contentSelectors.length;i++){
   /* preserve line breaks, paragraph breaks */
   c.querySelectorAll('br').forEach(function(br){
     var tn=document.createTextNode('¶BR¶');
-    br.parentNode.replaceChild(tn,br);
+    br.parentNode.replaceChild(tn,br)
   });
   c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){el.insertAdjacentText('afterend','¶PARA¶')});
   bodyText=(c.innerText||c.textContent);
   /* Placeholders back to newlines */
   bodyText=bodyText.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
-  if(bodyText.trim())break;
+  if(bodyText.trim())break
 }
 
 /* AI-generated black magic:
@@ -102,7 +101,7 @@ function scount(txt, sub) {
   if(!needle)return 0;
   var haystack=nrmlz(txt);
   if(!haystack)return 0;
-  return haystack.split(needle).length-1;
+  return haystack.split(needle).length-1
 }
 
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -139,9 +138,7 @@ header.appendChild(label);
 var tally=document.createElement('div');
 tally.className='wc-count';
 tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
-if(minusTerms.length>0){
-  tally.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '
-    +twc.toLocaleString();
+if(minusTerms.length>0){tally.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '+twc.toLocaleString();
 }else{tally.textContent=pwc.toLocaleString()+' – 0 = '+twc.toLocaleString()}
 
 var preview=document.createElement('div');
@@ -169,7 +166,7 @@ function buttonup(){
   copy.style.color=hi?'#1976D2':'#999';
   copy.style.cursor=hi?'pointer':'default';
   copy.textContent=hi?'Copy exclusion tags'
-                     :'Highlight text to exclude from wordcount';
+                     :'Highlight text to exclude from wordcount'
 }
 buttonup();
 document.addEventListener('selectionchange',buttonup);
@@ -180,7 +177,7 @@ copy.addEventListener('click',function(){
   var lines=[ST, selectedText, ET];
   navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
   copy.style.background='#c8e6c9';
-  copy.textContent='Copied! Now hit paste at the end of your doc';
+  copy.textContent='Copied! Now hit paste at the end of your doc'
 });
 
 var dbg=document.createElement('a');
@@ -192,7 +189,7 @@ dbg.addEventListener('click',function(e){
   var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug</h1><h2>contentSelectors</h2>';
   contentSelectors.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
-    h+='<h3>'+escHtml(s)+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>';
+    h+='<h3>'+escHtml(s)+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>'
   });
   h+='<h2>Inputs/Textareas</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
@@ -213,10 +210,10 @@ dbg.addEventListener('click',function(e){
       if(e.id)sel+='#'+e.id;
       if(e.className)sel+='.'+e.className.split(/\s+/).slice(0,2).join('.');
       sel+='[contenteditable="true"]';
-      h+='<h3>'+escHtml(sel)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
+      h+='<h3>'+escHtml(sel)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>'
     }
   });
-  w.document.documentElement.innerHTML=h;
+  w.document.documentElement.innerHTML=h
 });
 
 [header,tally,preview,copy,dbg].forEach(function(el){m.appendChild(el)});
@@ -232,7 +229,7 @@ function isTypingKey(e){
 function cleanup(){
   if(m && m.parentNode)m.parentNode.removeChild(m);
   document.removeEventListener('click', clickHandler, true);
-  document.removeEventListener('keydown', keyHandler, true);
+  document.removeEventListener('keydown', keyHandler, true)
 }
 
 function clickHandler(evt){if(!m || !m.contains(evt.target)) cleanup()}
@@ -241,8 +238,9 @@ function keyHandler(e){if(isTypingKey(e)) cleanup()}
 /* Delay to avoid immediately catching the opening click, apparently */
 setTimeout(function(){
   document.addEventListener('click', clickHandler, true);
-  document.addEventListener('keydown', keyHandler, true);
+  document.addEventListener('keydown', keyHandler, true)
 }, 10);
 
 },100); /* end of setTimeout */
+/* NB: We're close to the length limit for bookmarklets, at least for Chrome. In fact, this comment is carefully constructed to use up exactly the number of remaining characters so that we exactly hit Chrome's length limit. Eep! */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
