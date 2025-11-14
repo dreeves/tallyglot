@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.13-k';
+var VER='2025.11.13-l';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -43,12 +43,12 @@ for(var i=0;i<contentSelectors.length;i++){
     el.insertAdjacentText('afterend','¶PARA¶');
   });
   bodyText=(c.innerText||c.textContent);
-  /* Convert placeholders to actual newlines */
+  /* Placeholders back to newlines */
   bodyText=bodyText.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
   if(bodyText.trim())break;
 }
 
-/* Not sure if this is necessary...
+/* AI-generated black magic:
   - NFC normalize; CRLF -> \n
   - Convert Unicode spaces to ASCII space (LSEP/PSEP -> \n)
   - Drop invisibles (BOM, ZWSP, SHY, bidi controls, isolates)
@@ -69,21 +69,21 @@ function sanitize(s){
 
 /* Word count algorithm:
   - Split by whitespace into tokens
-  - Count tokens with at least one "meat" character
+  - Count tokens with at least one meat character
   - Meat = letters (\p{L}), numbers (\p{N}), or emoji
   - Scaffold = apostrophes/hyphens/punctuation (ignored, just along for ride) */
 function wordcount(text){
   text=sanitize(text);
   if(!text)return 0;
   var tokens=text.split(/\s+/);
-  var emojiPattern;
-  try{emojiPattern=new RegExp('\\p{Extended_Pictographic}','u')}
-  catch{emojiPattern=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u}
-  var meatPattern=/[\p{L}\p{N}]/u;
+  var pic;
+  try{pic=new RegExp('\\p{Extended_Pictographic}','u')}
+  catch{pic=/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u}
+  var meat=/[\p{L}\p{N}]/u;
   var cnt=0;
   for(var i=0;i<tokens.length;i++){
     var token=tokens[i];
-    if(token&&(meatPattern.test(token)||emojiPattern.test(token))){cnt++}
+    if(token&&(meat.test(token)||pic.test(token))){cnt++}
   }
   return cnt;
 }
@@ -92,24 +92,24 @@ var t=sanitize(bodyText).trim();
 var fi=t.indexOf(ST);
 var prefix=t.slice(0,fi===-1?t.length:fi);
 
-function getAllExclusionTexts(s){
-  var exclusions=[],pos=0;
+function getExclusions(s){
+  var exc=[],pos=0;
   while(true){
     var a=s.indexOf(ST,pos),b=a===-1?-1:s.indexOf(ET,a+ST.length);
     if(a===-1||b===-1)break;
-    exclusions.push(s.slice(a+ST.length,b).trim());
+    exc.push(s.slice(a+ST.length,b).trim());
     pos=b+ET.length;
   }
-  return exclusions;
+  return exc;
 }
   
 function countOccurrences(text,searchFor){
   var norm=searchFor.replace(/\s+/g,' ').trim().toLowerCase();
   if(!norm)return 0;
   var textNorm=text.replace(/\s+/g,' ').trim().toLowerCase();
-  var count=0,idx=0;
-  while((idx=textNorm.indexOf(norm,idx))!==-1){count++;idx+=norm.length}
-  return count;
+  var n=0,i=0;
+  while((i=textNorm.indexOf(norm,i))!==-1){n++;i+=norm.length}
+  return n;
 }
 function escHtml(s){return String(s).replace(/&/g,'&amp;')
                                     .replace(/</g,'&lt;')
@@ -124,19 +124,19 @@ function highlightExcluded(s,exs){
                .replace(/\n/g,'<br>');
 }
 
-var exs=getAllExclusionTexts(t);
-var x=wordcount(prefix);
-var subtractTerms=[],totalSubtraction=0;
+var exs=getExclusions(t);
+var pwc=wordcount(prefix);
+var minusTerms=[],s=0;
 for(var i=0;i<exs.length;i++){
   var excl=exs[i];
-  var y=wordcount(excl);
+  var xwc=wordcount(excl);
   var n=countOccurrences(prefix,excl);
   if(n>0){
-    subtractTerms.push(y.toLocaleString()+'*'+n.toLocaleString());
-    totalSubtraction+=n*y;
+    minusTerms.push(xwc.toLocaleString()+'×'+n);
+    s+=n*xwc;
   }
 }
-var result=x-totalSubtraction;
+var twc=pwc-s;
 
 var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
@@ -151,11 +151,11 @@ header.appendChild(label);
 var tally=document.createElement('div');
 tally.className='wc-count';
 tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
-if(subtractTerms.length>0){
-  tally.textContent=x.toLocaleString()+' - '+subtractTerms.join(' - ')+' = '
-    +result.toLocaleString();
+if(minusTerms.length>0){
+  tally.textContent=pwc.toLocaleString()+' - '+minusTerms.join(' - ')+' = '
+    +twc.toLocaleString();
 }else{
-  tally.textContent=x.toLocaleString()+' - 0 = '+result.toLocaleString();
+  tally.textContent=pwc.toLocaleString()+' - 0 = '+twc.toLocaleString();
 }
 
 var preview=document.createElement('div');
@@ -207,9 +207,9 @@ copy.addEventListener('click',function(){
 document.body.appendChild(m);
 
 function isTypingKey(e){
-  if (e.ctrlKey || e.altKey || e.metaKey) return false; /* Shift is allowed */
+  if(e.ctrlKey || e.altKey || e.metaKey) return false; /* Shift is allowed */
   var k = e.key || '';
-  return k.length === 1 /* any printable char, incl space */
+  return k.length === 1 /* printable chars, incl space */
       || k === 'Escape'
       || k === 'Enter' 
       || k === 'Tab' 
