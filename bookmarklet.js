@@ -1,34 +1,35 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-a';
-var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
+var VER='2025.11.15-g';
+var TOP='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
-
-/* Selector config: try these in order to find prose to wordcount */
-var contentSelectors=[
-  '.content', /* LessWrong */
-  'textarea[aria-label="Markdown value"]', /* gissue */
-  '.tiptap[contenteditable="true"]', /* Substack */
-  'textarea.pencraft', /* Substack comments */
-  'body',
-  'textarea.MuiTextarea-textarea:not([aria-hidden])', /* LessWrong title */
-  'input[aria-label="Add a title"]', /* gissue title */
-  'textarea[aria-label*="description"]',
-  'textarea.comment-form-textarea',
-  'article',
-  'main',
-  '.PostsPage-postContent',
-  '.PostBody-root',
+var CONSEL=[ /* Content selectors to try in order */
+'.content', /* LessWrong */
+'textarea[aria-label="Markdown value"]', /* gissue */
+'.tiptap[contenteditable="true"]', /* Substack */
+'textarea.pencraft', /* Substack comment */
+'body',
+'textarea.MuiTextarea-textarea.MuiInputBase-input', /* LessWrong title */
+'input[aria-label*="title"]', /* gissue title */
+'textarea[aria-label*="description"]',
+'textarea',
+'article',
+'main',
+/* 'textarea.comment-form-textarea', #SCHDEL */
+/* '.PostsPage-postContent', #SCHDEL */
+/* '.PostBody-root', #SCHDEL */
 ];
 
 var bodyText='',sel='';
-for(var i=0;i<contentSelectors.length;i++){
-  var el=document.querySelector(contentSelectors[i]);if(!el)continue;
-  sel=contentSelectors[i];
+for(var i=0;i<CONSEL.length;i++){
+  var el=document.querySelector(CONSEL[i]);if(!el)continue;
   /* textareas/inputs: use .value */
-  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){bodyText=el.value||'';break}
+  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
+    bodyText=el.value||'';
+    if(bodyText.trim()){sel=CONSEL[i];break}continue
+  }
   /* other elements: clone & extract text */
   var c=el.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe').forEach(function(x){x.remove()});
@@ -41,7 +42,7 @@ for(var i=0;i<contentSelectors.length;i++){
   bodyText=(c.innerText||c.textContent);
   /* Placeholders back to newlines */
   bodyText=bodyText.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
-  if(bodyText.trim())break
+  if(bodyText.trim()){sel=CONSEL[i];break}
 }
 
 /* AI-generated black magic:
@@ -133,8 +134,7 @@ var header=document.createElement('div');
 header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;';
 var label=document.createElement('span');
 label.style.cssText='font-size:13px;color:#666;display:flex;align-items:center;justify-content:space-between;width:100%';
-label.innerHTML=TOPTEXT;
-header.appendChild(label);
+label.innerHTML=TOP;header.appendChild(label);
 
 var tally=document.createElement('div');
 tally.className='wc-count';
@@ -188,9 +188,10 @@ dbg.textContent='[debug]';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
   var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug</h1><h2>contentSelectors</h2>';
-  contentSelectors.forEach(function(s){
+  CONSEL.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
-    h+='<h3>'+escHtml(s)+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>'
+    var m=e?' <small style="color:#666">→ '+e.tagName.toLowerCase()+(e.className?'.'+e.className.split(/\s+/).slice(0,2).join('.'):'')+(e.getAttribute('aria-label')?'[aria-label]':'')+'</small>':'';
+    h+='<h3>'+escHtml(s)+m+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>'
   });
   h+='<h2>Inputs/Textareas</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
@@ -236,12 +237,12 @@ function cleanup(){
 function clickHandler(evt){if(!m || !m.contains(evt.target)) cleanup()}
 function keyHandler(e){if(isTypingKey(e)) cleanup()}
 
-/* Delay to avoid immediately catching the opening click, apparently */
+/* Delay to not immediately catch the opening click? */
 setTimeout(function(){
   document.addEventListener('click', clickHandler, true);
   document.addEventListener('keydown', keyHandler, true)
 }, 10);
 
 },100); /* end of setTimeout */
-/* NB: We're close to the length limit for bookmarklets, at least for Chrome. In fact, this comment is constructed to use up exactly the number of remaining characters. Eeeeeeeeeep! */
+/*********/
 })(); /* end of IIFE, end of tallyglot bookmarklet */
