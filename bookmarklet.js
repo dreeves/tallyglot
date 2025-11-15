@@ -1,8 +1,10 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-j';
-var TOP='<span>Word Count</span><span style="margin-left:auto">'
-  +'<small>[tallyglot v'+VER+']</small></span>';
+var VER='2025.11.15-n';
+/* var TOP='<span>Word Count</span><span style="margin-left:auto">'
+  +'<small>[tallyglot v'+VER+']</small></span>'; 
+var TOP="Word Count";
+*/
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -22,13 +24,13 @@ var CONSEL=[ /* Content selectors to try in order */
 /* '.PostBody-root', #SCHDEL */
 ];
 
-var bodyText='',sel='';
+var txt='',sel='';
 for(var i=0;i<CONSEL.length;i++){
   var el=document.querySelector(CONSEL[i]);if(!el)continue;
   /* textareas/inputs: use .value */
   if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
-    bodyText=el.value||'';
-    if(bodyText.trim()){sel=CONSEL[i];break}continue
+    txt=el.value||'';
+    if(txt.trim()){sel=CONSEL[i];break}continue
   }
   /* other elements: clone & extract text */
   var c=el.cloneNode(true);
@@ -39,10 +41,10 @@ for(var i=0;i<CONSEL.length;i++){
     br.parentNode.replaceChild(tn,br)
   });
   c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){el.insertAdjacentText('afterend','¶PARA¶')});
-  bodyText=(c.innerText||c.textContent);
+  txt=(c.innerText||c.textContent);
   /* Placeholders back to newlines */
-  bodyText=bodyText.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
-  if(bodyText.trim()){sel=CONSEL[i];break}
+  txt=txt.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
+  if(txt.trim()){sel=CONSEL[i];break}
 }
 
 /* AI-generated black magic:
@@ -68,7 +70,7 @@ function sanitize(s){
   - Count tokens w/ >=1 meat characters
   - Meat = letters (\p{L}), numbers (\p{N}), or emoji
   - Scaffold = apostrophes/hyphens/punctuation */
-function wordcount(s){
+function tallyho(s){
   s=sanitize(s);if(!s)return 0;
   var tokens=s.split(/\s+/);
   var pic;try{pic=new RegExp('\\p{Extended_Pictographic}','u')}
@@ -82,7 +84,7 @@ function wordcount(s){
   return n
 }
 
-var t=sanitize(bodyText).trim();
+var t=sanitize(txt).trim();
 var fi=t.indexOf(ST);
 var prefix=t.slice(0,fi===-1?t.length:fi);
 
@@ -117,11 +119,11 @@ function highlightExcluded(s,exs){
 }
 
 var exs=getExclusions(t);
-var pwc=wordcount(prefix);
+var pwc=tallyho(prefix);
 var minusTerms=[],s=0;
 for(var i=0;i<exs.length;i++){
   var excl=exs[i];
-  var xwc=wordcount(excl);
+  var xwc=tallyho(excl);
   var n=scount(prefix,excl);
   if(n>0){minusTerms.push(xwc.toLocaleString()+'×'+n);s+=n*xwc}
 }
@@ -133,61 +135,54 @@ m.appendChild(document.createElement('style')).innerHTML='.fx{display:flex;align
 
 var header=document.createElement('div');
 header.className='fx ns mb';
-var label=document.createElement('span');
-label.className='fx';
-label.style.cssText='font-size:13px;color:#666';
-label.innerHTML=TOP;header.appendChild(label);
 
-var tally=document.createElement('div');
-tally.className='wc-count ns mb lh bld';
-tally.style.cssText='font-size:24px;color:#333';
-if(minusTerms.length>0){tally.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '+twc.toLocaleString();
-}else{tally.textContent=pwc.toLocaleString()+' – 0 = '+twc.toLocaleString()}
+var tg=document.createElement('div');
+tg.className='ns mb lh bld';
+tg.style.cssText='font-size:24px;color:#333';
+if(minusTerms.length>0){tg.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '+twc.toLocaleString();
+}else{tg.textContent=pwc.toLocaleString()+' – 0 = '+twc.toLocaleString()+" words:"}
 
-var preview=document.createElement('div');
-preview.className='wc-preview mn r3 p8 lh';
-preview.style.cssText='font-size:11px;color:#444;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;word-break:break-word';
-preview.innerHTML=highlightExcluded(prefix,exs);
+var words=document.createElement('div');
+words.className='mn r3 p8 lh';
+words.style.cssText='font-size:11px;color:#444;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;word-break:break-word';
+words.innerHTML=highlightExcluded(prefix,exs);
 
-var copy=document.createElement('button');
-copy.id='wc-copy'; copy.type='button';
-copy.className='ns mn r3 p8 bld tc';
-copy.style.cssText='margin-top:10px;background:#e3f2fd;border:2px dashed #2196F3;white-space:pre-wrap;font-size:9px;color:#1976D2;cursor:pointer';
+var cb=document.createElement('button');
+cb.className='ns mn r3 p8 bld tc';
+cb.style.cssText='margin-top:10px;background:#e3f2fd;border:2px dashed #2196F3;white-space:pre-wrap;font-size:9px;color:#1976D2;cursor:pointer';
 
 /* Return whatever text in the popup is highlighted */
 function getsel(){
   var sel=window.getSelection();
   if(sel&&sel.rangeCount>0&&sel.toString().trim()){
     var range=sel.getRangeAt(0);
-    if(preview.contains(range.commonAncestorContainer)){return sel.toString()}
+    if(words.contains(range.commonAncestorContainer)){return sel.toString()}
   }
   return ''
 }
 
 function buttonup(){
   var hi=!!getsel();
-  copy.style.background=hi?'#e3f2fd':'#f5f5f5';
-  copy.style.color=hi?'#1976D2':'#999';
-  copy.style.cursor=hi?'pointer':'default';
-  copy.textContent=hi?'Copy exclusion tags'
+  cb.style.background=hi?'#e3f2fd':'#f5f5f5';
+  cb.style.color=hi?'#1976D2':'#999';
+  cb.style.cursor=hi?'pointer':'default';
+  cb.textContent=hi?'Copy exclusion tags'
                      :'Highlight text to exclude from wordcount'
 }
 buttonup();
 document.addEventListener('selectionchange',buttonup);
 
-copy.addEventListener('click',function(){
-  var selectedText=getsel();
-  if(!selectedText)return;
-  var lines=[ST, selectedText, ET];
-  navigator.clipboard.writeText(lines.join(String.fromCharCode(10)));
-  copy.style.background='#c8e6c9';
-  copy.textContent='Copied! Now hit paste at the end of your doc'
+cb.addEventListener('click',function(){
+  var t=getsel();if(!t)return;
+  navigator.clipboard.writeText([ST,t,ET].join('\n'));
+  cb.style.background='#c8e6c9';
+  cb.textContent='Copied! Now hit paste at the end of your doc'
 });
 
 var dbg=document.createElement('a');
 dbg.href='#';
-dbg.style.cssText='font-size:9px;color:#999;text-align:center;margin-top:8px;text-decoration:none;';
-dbg.textContent='[debug]';
+dbg.style.cssText='font-size:9px;color:#999;margin-top:8px;text-align:right';
+dbg.textContent="Tallyglot v"+VER+" debug";
 dbg.addEventListener('click',function(e){
   e.preventDefault();
   var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug</h1><h2>contentSelectors</h2>';
@@ -221,7 +216,7 @@ dbg.addEventListener('click',function(e){
   w.document.documentElement.innerHTML=h
 });
 
-[header,tally,preview,copy,dbg].forEach(function(el){m.appendChild(el)});
+[header,tg,words,cb,dbg].forEach(function(el){m.appendChild(el)});
 document.body.appendChild(m);
 
 function isTypingKey(e){
@@ -248,4 +243,4 @@ setTimeout(function(){
 
 },100); /* end of setTimeout */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
-/* Bookmarklet length limit ----------------------------------------------------------------> */
+/* Bookmarklet length limit -------------------------------------------------------------------------------------------------------------------- one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six twenty-seven twenty-eight twenty-nine thirty thirty-one -------------------------------------------------> */
