@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-h';
+var VER='2025.11.15-i';
 var TOP='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -131,9 +131,9 @@ var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
 
 var header=document.createElement('div');
-header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;';
+header.style.cssText='display:flex;align-items:center;margin-bottom:10px;flex-shrink:0;';
 var label=document.createElement('span');
-label.style.cssText='font-size:13px;color:#666;display:flex;align-items:center;justify-content:space-between;width:100%';
+label.style.cssText='font-size:13px;color:#666;display:flex;align-items:center;width:100%';
 label.innerHTML=TOP;header.appendChild(label);
 
 var tally=document.createElement('div');
@@ -245,4 +245,4 @@ setTimeout(function(){
 
 },100); /* end of setTimeout */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
-/* Bookmarklet length limit ------------> */
+/* Bookmarklet length limit ------------------------------------------------------------------------> */
