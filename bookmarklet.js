@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-i';
+var VER='2025.11.15-j';
 var TOP='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -129,27 +129,30 @@ var twc=pwc-s;
 
 var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
+m.appendChild(document.createElement('style')).innerHTML='.fx{display:flex;align-items:center}.ns{flex-shrink:0}.mb{margin-bottom:10px}.mn{font-family:monospace}.r3{border-radius:3px}.p8{padding:8px}.lh{line-height:1.2}.bld{font-weight:bold}.tc{text-align:center}';
 
 var header=document.createElement('div');
-header.style.cssText='display:flex;align-items:center;margin-bottom:10px;flex-shrink:0;';
+header.className='fx ns mb';
 var label=document.createElement('span');
-label.style.cssText='font-size:13px;color:#666;display:flex;align-items:center;width:100%';
+label.className='fx';
+label.style.cssText='font-size:13px;color:#666';
 label.innerHTML=TOP;header.appendChild(label);
 
 var tally=document.createElement('div');
-tally.className='wc-count';
-tally.style.cssText='font-size:24px;font-weight:bold;color:#333;margin-bottom:10px;line-height:1.2;flex-shrink:0;';
+tally.className='wc-count ns mb lh bld';
+tally.style.cssText='font-size:24px;color:#333';
 if(minusTerms.length>0){tally.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '+twc.toLocaleString();
 }else{tally.textContent=pwc.toLocaleString()+' – 0 = '+twc.toLocaleString()}
 
 var preview=document.createElement('div');
-preview.className='wc-preview';
-preview.style.cssText='font-size:11px;color:#444;font-family:monospace;line-height:1.2;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;padding:8px;border-radius:3px;word-break:break-word;';
+preview.className='wc-preview mn r3 p8 lh';
+preview.style.cssText='font-size:11px;color:#444;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;word-break:break-word';
 preview.innerHTML=highlightExcluded(prefix,exs);
 
 var copy=document.createElement('button');
 copy.id='wc-copy'; copy.type='button';
-copy.style.cssText='margin-top:10px;padding:8px;background:#e3f2fd;border:2px dashed #2196F3;border-radius:3px;white-space:pre-wrap;font-size:9px;font-family:monospace;color:#1976D2;cursor:pointer;text-align:center;font-weight:bold;flex-shrink:0;';
+copy.className='ns mn r3 p8 bld tc';
+copy.style.cssText='margin-top:10px;background:#e3f2fd;border:2px dashed #2196F3;white-space:pre-wrap;font-size:9px;color:#1976D2;cursor:pointer';
 
 /* Return whatever text in the popup is highlighted */
 function getsel(){
@@ -245,4 +248,4 @@ setTimeout(function(){
 
 },100); /* end of setTimeout */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
-/* Bookmarklet length limit ------------------------------------------------------------------------> */
+/* Bookmarklet length limit ----------------------------------------------------------------> */
