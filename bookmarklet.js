@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-q';
+var VER='2025.11.15-t';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -61,7 +61,7 @@ function sanitize(s){
   return s
 }
 
-/* Algorithm:
+/* Wordcount algorithm:
   - Split by whitespace into tokens
   - Count tokens w/ >=1 meat characters
   - Meat = letters (\p{L}), numbers (\p{N}), or emoji
@@ -127,7 +127,7 @@ var twc=pwc-s;
 
 var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
-m.appendChild(document.createElement('style')).innerHTML='.ns{flex-shrink:0}.mb{margin-bottom:10px}.mn{font-family:monospace}.r3{border-radius:3px}.p8{padding:8px}.lh{line-height:1.2}.bld{font-weight:bold}.tc{text-align:center}';
+m.appendChild(document.createElement('style')).innerHTML='a{color:inherit}.ns{flex-shrink:0}.mb{margin-bottom:10px}.mn{font-family:monospace}.r3{border-radius:3px}.p8{padding:8px}.lh{line-height:1.2}.bld{font-weight:bold}.tc{text-align:center}';
 
 var tg=document.createElement('div');
 tg.className='ns mb lh bld';
@@ -160,7 +160,7 @@ function buttonup(){
   cb.style.color=hi?'#1976D2':'#999';
   cb.style.cursor=hi?'pointer':'default';
   cb.textContent=hi?'Copy exclusion tags'
-                     :'Highlight text to exclude from wordcount'
+                   :'Highlight text to exclude from wordcount'
 }
 buttonup();
 document.addEventListener('selectionchange',buttonup);
@@ -172,13 +172,20 @@ cb.addEventListener('click',function(){
   cb.textContent='Copied! Now hit paste at the end of your doc'
 });
 
+var footer=document.createElement('div');
+footer.style.cssText='display:flex;justify-content:space-between;margin-top:8px;font-size:9px;color:#999';
+
+var gh=document.createElement('a');
+gh.href='https://github.com/dreeves/tallyglot';
+gh.target='_blank';
+gh.textContent='Tallyglot v'+VER;
+
 var dbg=document.createElement('a');
 dbg.href='#';
-dbg.style.cssText='font-size:9px;color:#999;margin-top:8px;align-self:flex-end';
-dbg.textContent="Tallyglot v"+VER+" debug";
+dbg.textContent='debug link';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
-  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug</h1><h2>contentSelectors</h2>';
+  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>contentSelectors</h2>';
   CONSEL.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
     var m=e?' <small style="color:#666">→ '+e.tagName.toLowerCase()+(e.className?'.'+e.className.split(/\s+/).join('.'):'')+'</small>':'';
@@ -209,7 +216,10 @@ dbg.addEventListener('click',function(e){
   w.document.documentElement.innerHTML=h
 });
 
-[tg,words,cb,dbg].forEach(function(el){m.appendChild(el)});
+footer.appendChild(gh);
+footer.appendChild(dbg);
+
+[tg,words,cb,footer].forEach(function(el){m.appendChild(el)});
 document.body.appendChild(m);
 
 function isTypingKey(e){
