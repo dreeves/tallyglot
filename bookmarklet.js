@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.14-g';
+var VER='2025.11.15-a';
 var TOPTEXT='<span>Word Count</span><span style="margin-left:auto">'
   +'<small>[tallyglot v'+VER+']</small></span>';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
@@ -11,6 +11,7 @@ var contentSelectors=[
   '.content', /* LessWrong */
   'textarea[aria-label="Markdown value"]', /* gissue */
   '.tiptap[contenteditable="true"]', /* Substack */
+  'textarea.pencraft', /* Substack comments */
   'body',
   'textarea.MuiTextarea-textarea:not([aria-hidden])', /* LessWrong title */
   'input[aria-label="Add a title"]', /* gissue title */
@@ -242,5 +243,5 @@ setTimeout(function(){
 }, 10);
 
 },100); /* end of setTimeout */
-/* NB: We're close to the length limit for bookmarklets, at least for Chrome. In fact, this comment is carefully constructed to use up exactly the number of remaining characters so that we exactly hit Chrome's length limit. Eep! */
+/* NB: We're close to the length limit for bookmarklets, at least for Chrome. In fact, this comment is constructed to use up exactly the number of remaining characters. Eeeeeeeeeep! */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
