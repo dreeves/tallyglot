@@ -1,10 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-n';
-/* var TOP='<span>Word Count</span><span style="margin-left:auto">'
-  +'<small>[tallyglot v'+VER+']</small></span>'; 
-var TOP="Word Count";
-*/
+var VER='2025.11.15-q';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -131,10 +127,7 @@ var twc=pwc-s;
 
 var m=document.createElement('div');
 m.style.cssText='position:fixed;top:20px;right:20px;background:#fff;padding:15px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:sans-serif;width:360px;border:1px solid #ddd;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;';
-m.appendChild(document.createElement('style')).innerHTML='.fx{display:flex;align-items:center}.ns{flex-shrink:0}.mb{margin-bottom:10px}.mn{font-family:monospace}.r3{border-radius:3px}.p8{padding:8px}.lh{line-height:1.2}.bld{font-weight:bold}.tc{text-align:center}';
-
-var header=document.createElement('div');
-header.className='fx ns mb';
+m.appendChild(document.createElement('style')).innerHTML='.ns{flex-shrink:0}.mb{margin-bottom:10px}.mn{font-family:monospace}.r3{border-radius:3px}.p8{padding:8px}.lh{line-height:1.2}.bld{font-weight:bold}.tc{text-align:center}';
 
 var tg=document.createElement('div');
 tg.className='ns mb lh bld';
@@ -144,12 +137,12 @@ if(minusTerms.length>0){tg.textContent=pwc.toLocaleString()+' – '+minusTerms.j
 
 var words=document.createElement('div');
 words.className='mn r3 p8 lh';
-words.style.cssText='font-size:11px;color:#444;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5;word-break:break-word';
+words.style.cssText='font-size:11px;color:#444;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5';
 words.innerHTML=highlightExcluded(prefix,exs);
 
 var cb=document.createElement('button');
 cb.className='ns mn r3 p8 bld tc';
-cb.style.cssText='margin-top:10px;background:#e3f2fd;border:2px dashed #2196F3;white-space:pre-wrap;font-size:9px;color:#1976D2;cursor:pointer';
+cb.style.cssText='margin-top:10px;background:#e3f2fd;border:2px dashed #2196F3;font-size:9px;color:#1976D2';
 
 /* Return whatever text in the popup is highlighted */
 function getsel(){
@@ -181,14 +174,14 @@ cb.addEventListener('click',function(){
 
 var dbg=document.createElement('a');
 dbg.href='#';
-dbg.style.cssText='font-size:9px;color:#999;margin-top:8px;text-align:right';
+dbg.style.cssText='font-size:9px;color:#999;margin-top:8px;align-self:flex-end';
 dbg.textContent="Tallyglot v"+VER+" debug";
 dbg.addEventListener('click',function(e){
   e.preventDefault();
   var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug</h1><h2>contentSelectors</h2>';
   CONSEL.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
-    var m=e?' <small style="color:#666">→ '+e.tagName.toLowerCase()+(e.className?'.'+e.className.split(/\s+/).join('.'):'')+(e.getAttribute('aria-label')?'[aria-label]':'')+'</small>':'';
+    var m=e?' <small style="color:#666">→ '+e.tagName.toLowerCase()+(e.className?'.'+e.className.split(/\s+/).join('.'):'')+'</small>':'';
     h+='<h3>'+escHtml(s)+m+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>'
   });
   h+='<h2>Inputs/Textareas</h2>';
@@ -216,7 +209,7 @@ dbg.addEventListener('click',function(e){
   w.document.documentElement.innerHTML=h
 });
 
-[header,tg,words,cb,dbg].forEach(function(el){m.appendChild(el)});
+[tg,words,cb,dbg].forEach(function(el){m.appendChild(el)});
 document.body.appendChild(m);
 
 function isTypingKey(e){
@@ -242,5 +235,5 @@ setTimeout(function(){
 }, 10);
 
 },100); /* end of setTimeout */
+/* NB: We're near the bookmarklet length limit, at least for Google Chrome. This comment can be jettisoned if needed. Or lengthen it to see just how much space we have left before Chrome starts truncating it when you paste it in. */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
-/* Bookmarklet length limit -------------------------------------------------------------------------------------------------------------------- one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six twenty-seven twenty-eight twenty-nine thirty thirty-one -------------------------------------------------> */
