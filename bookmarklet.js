@@ -1,12 +1,12 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-w';
+var VER='2025.11.16-c';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
 '.content', /* LessWrong */
 'textarea[aria-label="Markdown value"]', /* gissue */
-'.tiptap[contenteditable="true"]', /* Substack */
+'.tiptap', /* Substack */
 'textarea.pencraft', /* Substack comment */
 'body',
 'textarea.MuiTextarea-textarea.MuiInputBase-input', /* LessWrong title */
@@ -185,7 +185,7 @@ dbg.href='#';
 dbg.textContent='debug link';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
-  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>contentSelectors</h2>';
+  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>Use the first of these with content:</h2>';
   function add(label,content){
     var wc=' <small style="color:#999">('+tallyho(content)+' words)</small>';
     h+='<h3>'+label+wc+'</h3><pre>'+escHtml(content)+'</pre>'
@@ -199,17 +199,15 @@ dbg.addEventListener('click',function(e){
   CONSEL.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
     var m=e?' <small style="color:#666">→ '+buildSel(e)+'</small>':'';
-    add(escHtml(s)+m+(s===sel?' ✓':''),v)
+    add(s+m+(s===sel?' ✓':''),v)
   });
   h+='<h2>Inputs/Textareas</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
-    var s=buildSel(e);
-    if(e.getAttribute('aria-label'))s+='[aria-label="'+e.getAttribute('aria-label')+'"]';
-    add(escHtml(s),e.value||'')
+    add(buildSel(e),e.value||'')
   });
   h+='<h2>Contenteditable Elements</h2>';
   document.querySelectorAll('[contenteditable="true"],[role="textbox"]').forEach(function(e){
-    add(escHtml(buildSel(e)+'[contenteditable="true"]'),e.innerText||e.textContent||'')
+    add(buildSel(e)+'[contenteditable="true"]',e.innerText||e.textContent||'')
   });
   w.document.documentElement.innerHTML=h
 });
