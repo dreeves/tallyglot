@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-t';
+var VER='2025.11.15-u';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -189,7 +189,8 @@ dbg.addEventListener('click',function(e){
   CONSEL.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
     var m=e?' <small style="color:#666">→ '+e.tagName.toLowerCase()+(e.className?'.'+e.className.split(/\s+/).join('.'):'')+'</small>':'';
-    h+='<h3>'+escHtml(s)+m+(s===sel?' ✓':'')+'</h3><pre>'+escHtml(v)+'</pre>'
+    var wc=v?' <small style="color:#999">('+tallyho(v)+' words)</small>':'';
+    h+='<h3>'+escHtml(s)+m+(s===sel?' ✓':'')+wc+'</h3><pre>'+escHtml(v)+'</pre>'
   });
   h+='<h2>Inputs/Textareas</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
@@ -199,7 +200,7 @@ dbg.addEventListener('click',function(e){
       if(e.id)sel+='#'+e.id;
       if(e.className)sel+='.'+e.className.split(/\s+/).join('.');
       if(e.getAttribute('aria-label'))sel+='[aria-label="'+e.getAttribute('aria-label')+'"]';
-      h+='<h3>'+escHtml(sel)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
+      h+='<h3>'+escHtml(sel)+' <small style="color:#999">('+tallyho(v)+' words)</small></h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
     }
   });
   h+='<h2>Contenteditable Elements</h2>';
@@ -210,7 +211,7 @@ dbg.addEventListener('click',function(e){
       if(e.id)sel+='#'+e.id;
       if(e.className)sel+='.'+e.className.split(/\s+/).join('.');
       sel+='[contenteditable="true"]';
-      h+='<h3>'+escHtml(sel)+'</h3><pre>'+escHtml(v.substring(0,200))+'</pre>'
+      h+='<h3>'+escHtml(sel)+' <small style="color:#999">('+tallyho(v)+' words)</small></h3><pre>'+escHtml(v.substring(0,200))+'</pre>'
     }
   });
   w.document.documentElement.innerHTML=h
