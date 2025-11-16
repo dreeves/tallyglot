@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.15-u';
+var VER='2025.11.15-w';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -186,33 +186,30 @@ dbg.textContent='debug link';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
   var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>contentSelectors</h2>';
+  function add(label,content){
+    var wc=' <small style="color:#999">('+tallyho(content)+' words)</small>';
+    h+='<h3>'+label+wc+'</h3><pre>'+escHtml(content)+'</pre>'
+  }
+  function buildSel(e){
+    var s=e.tagName.toLowerCase();
+    if(e.id)s+='#'+e.id;
+    if(e.className)s+='.'+e.className.split(/\s+/).join('.');
+    return s
+  }
   CONSEL.forEach(function(s){
     var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
-    var m=e?' <small style="color:#666">→ '+e.tagName.toLowerCase()+(e.className?'.'+e.className.split(/\s+/).join('.'):'')+'</small>':'';
-    var wc=v?' <small style="color:#999">('+tallyho(v)+' words)</small>':'';
-    h+='<h3>'+escHtml(s)+m+(s===sel?' ✓':'')+wc+'</h3><pre>'+escHtml(v)+'</pre>'
+    var m=e?' <small style="color:#666">→ '+buildSel(e)+'</small>':'';
+    add(escHtml(s)+m+(s===sel?' ✓':''),v)
   });
   h+='<h2>Inputs/Textareas</h2>';
   document.querySelectorAll('input[type="text"],input:not([type]),textarea').forEach(function(e){
-    var v=e.value||'';
-    if(v.trim()){
-      var sel=e.tagName.toLowerCase();
-      if(e.id)sel+='#'+e.id;
-      if(e.className)sel+='.'+e.className.split(/\s+/).join('.');
-      if(e.getAttribute('aria-label'))sel+='[aria-label="'+e.getAttribute('aria-label')+'"]';
-      h+='<h3>'+escHtml(sel)+' <small style="color:#999">('+tallyho(v)+' words)</small></h3><pre>'+escHtml(v.substring(0,200))+'</pre>';
-    }
+    var s=buildSel(e);
+    if(e.getAttribute('aria-label'))s+='[aria-label="'+e.getAttribute('aria-label')+'"]';
+    add(escHtml(s),e.value||'')
   });
   h+='<h2>Contenteditable Elements</h2>';
   document.querySelectorAll('[contenteditable="true"],[role="textbox"]').forEach(function(e){
-    var v=(e.innerText||e.textContent||'');
-    if(v.trim()){
-      var sel=e.tagName.toLowerCase();
-      if(e.id)sel+='#'+e.id;
-      if(e.className)sel+='.'+e.className.split(/\s+/).join('.');
-      sel+='[contenteditable="true"]';
-      h+='<h3>'+escHtml(sel)+' <small style="color:#999">('+tallyho(v)+' words)</small></h3><pre>'+escHtml(v.substring(0,200))+'</pre>'
-    }
+    add(escHtml(buildSel(e)+'[contenteditable="true"]'),e.innerText||e.textContent||'')
   });
   w.document.documentElement.innerHTML=h
 });
