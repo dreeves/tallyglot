@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.16-c';
+var VER='2025.11.17-a';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -19,29 +19,6 @@ var CONSEL=[ /* Content selectors to try in order */
 /* '.PostsPage-postContent', #SCHDEL */
 /* '.PostBody-root', #SCHDEL */
 ];
-
-var txt='',sel='';
-for(var i=0;i<CONSEL.length;i++){
-  var el=document.querySelector(CONSEL[i]);if(!el)continue;
-  /* textareas/inputs: use .value */
-  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
-    txt=el.value||'';
-    if(txt.trim()){sel=CONSEL[i];break}continue
-  }
-  /* other elements: clone & extract text */
-  var c=el.cloneNode(true);
-  c.querySelectorAll('script,style,nav,footer,header,iframe').forEach(function(x){x.remove()});
-  /* preserve line breaks, paragraph breaks */
-  c.querySelectorAll('br').forEach(function(br){
-    var tn=document.createTextNode('¶BR¶');
-    br.parentNode.replaceChild(tn,br)
-  });
-  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){el.insertAdjacentText('afterend','¶PARA¶')});
-  txt=(c.innerText||c.textContent);
-  /* Placeholders back to newlines */
-  txt=txt.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
-  if(txt.trim()){sel=CONSEL[i];break}
-}
 
 /* AI-generated black magic:
   - NFC normalize; CRLF -> \n
@@ -80,10 +57,6 @@ function tallyho(s){
   return n
 }
 
-var t=sanitize(txt).trim();
-var fi=t.indexOf(ST);
-var prefix=t.slice(0,fi===-1?t.length:fi);
-
 function getExclusions(s){
   var exc=[],pos=0;
   while(true){
@@ -97,8 +70,7 @@ function getExclusions(s){
 
 function nrmlz(s){return String(s||'').replace(/\s+/g,' ').trim()}
 function scount(txt, sub) {
-  var needle=nrmlz(sub);
-  if(!needle)return 0;
+  var needle=nrmlz(sub);if(!needle)return 0;
   var haystack=nrmlz(txt);
   if(!haystack)return 0;
   return haystack.split(needle).length-1
@@ -114,6 +86,32 @@ function highlightExcluded(s,exs){
   return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>').replace(/\n/g,'<br>')
 }
 
+var txt='',sel='';
+for(var i=0;i<CONSEL.length;i++){
+  var el=document.querySelector(CONSEL[i]);if(!el)continue;
+  /* textareas/inputs: use .value */
+  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
+    txt=el.value||'';
+    if(txt.trim()){sel=CONSEL[i];break}continue
+  }
+  /* other elements: clone & extract text */
+  var c=el.cloneNode(true);
+  c.querySelectorAll('script,style,nav,footer,header,iframe').forEach(function(x){x.remove()});
+  /* preserve line breaks, paragraph breaks */
+  c.querySelectorAll('br').forEach(function(br){
+    var tn=document.createTextNode('¶BR¶');
+    br.parentNode.replaceChild(tn,br)
+  });
+  c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){el.insertAdjacentText('afterend','¶PARA¶')});
+  txt=(c.innerText||c.textContent);
+  /* Placeholders back to newlines */
+  txt=txt.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
+  if(txt.trim()){sel=CONSEL[i];break}
+}
+
+var t=sanitize(txt).trim(); /* probably keep using txt instead of t? */
+var fi=t.indexOf(ST); /* final index to care about; if -1 then make it txt.length */
+var prefix=t.slice(0,fi===-1?t.length:fi);
 var exs=getExclusions(t);
 var pwc=tallyho(prefix);
 var minusTerms=[],s=0;
@@ -121,7 +119,8 @@ for(var i=0;i<exs.length;i++){
   var excl=exs[i];
   var xwc=tallyho(excl);
   var n=scount(prefix,excl);
-  if(n>0){minusTerms.push(xwc.toLocaleString()+'×'+n);s+=n*xwc}
+  minusTerms.push(xwc.toLocaleString()+'×'+n);
+  s+=n*xwc
 }
 var twc=pwc-s;
 
@@ -132,8 +131,7 @@ m.appendChild(document.createElement('style')).innerHTML='a{color:inherit}.ns{fl
 var tg=document.createElement('div');
 tg.className='ns mb lh bld';
 tg.style.cssText='font-size:24px;color:#333';
-if(minusTerms.length>0){tg.textContent=pwc.toLocaleString()+' – '+minusTerms.join(' – ')+' = '+twc.toLocaleString();
-}else{tg.textContent=pwc.toLocaleString()+' – 0 = '+twc.toLocaleString()+" words:"}
+tg.textContent=pwc.toLocaleString()+' – '+(minusTerms.length>0?minusTerms.join(' – '):'0')+' = '+twc.toLocaleString()+" words:";
 
 var words=document.createElement('div');
 words.className='mn r3 p8 lh';
@@ -185,7 +183,7 @@ dbg.href='#';
 dbg.textContent='debug link';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
-  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>Use the first of these with content:</h2>';
+  var w=window.open('','_blank'),h='<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>Use the first of these that's nonempty:</h2>';
   function add(label,content){
     var wc=' <small style="color:#999">('+tallyho(content)+' words)</small>';
     h+='<h3>'+label+wc+'</h3><pre>'+escHtml(content)+'</pre>'
@@ -238,8 +236,8 @@ function keyHandler(e){if(isTypingKey(e)) cleanup()}
 setTimeout(function(){
   document.addEventListener('click', clickHandler, true);
   document.addEventListener('keydown', keyHandler, true)
-}, 10);
+}, 10)
 
-},100); /* end of setTimeout */
-/* NB: We're near the bookmarklet length limit, at least for Google Chrome. This comment can be jettisoned if needed. Or lengthen it to see just how much space we have left before Chrome starts truncating it when you paste it in. */
+},100) /* end of setTimeout */
+/* NB: We're near the bookmarklet length limit, at least for Google Chrome. This comment can be jettisoned if needed. Or lengthen it to see just how much space we have left before Chrome starts truncating it when you paste it in. I think Firefox allows something longer but am not sure now. Might be worth looking up the length limit for other browsers. We're currently doing a fair bit of ugly compression in the above code, with a fair bit more possible, like by actually minifying it. */
 })(); /* end of IIFE, end of tallyglot bookmarklet */
