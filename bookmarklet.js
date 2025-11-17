@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.17-b';
+var VER='2025.11.17-l';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -8,6 +8,7 @@ var CONSEL=[ /* Content selectors to try in order */
 'textarea[aria-label="Markdown value"]', /* gissue */
 '.tiptap', /* Substack */
 'textarea.pencraft', /* Substack comment */
+'.cm-content', /* Replit */
 'body',
 'textarea.MuiTextarea-textarea.MuiInputBase-input', /* LessWrong title */
 'input[aria-label*="title"]', /* gissue title */
@@ -86,14 +87,9 @@ function highlightExcluded(s,exs){
   return result.replace(/\n\n/g,'<br><span style="display:block;height:0.6em"></span>').replace(/\n/g,'<br>')
 }
 
-var txt='',sel='';
-for(var i=0;i<CONSEL.length;i++){
-  var el=document.querySelector(CONSEL[i]);if(!el)continue;
+function textract(el){
   /* textareas/inputs: use .value */
-  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){
-    txt=el.value||'';
-    if(txt.trim()){sel=CONSEL[i];break}continue
-  }
+  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT')return el.value||'';
   /* other elements: clone & extract text */
   var c=el.cloneNode(true);
   c.querySelectorAll('script,style,nav,footer,header,iframe').forEach(function(x){x.remove()});
@@ -103,16 +99,30 @@ for(var i=0;i<CONSEL.length;i++){
     br.parentNode.replaceChild(tn,br)
   });
   c.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,td,th').forEach(function(el){el.insertAdjacentText('afterend','¶PARA¶')});
-  txt=(c.innerText||c.textContent);
-  /* Placeholders back to newlines */
-  txt=txt.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n');
-  if(txt.trim()){sel=CONSEL[i];break}
+  var txt=(c.innerText||c.textContent);
+  /* placeholders back to newlines */
+  return txt.replace(/\s*¶BR¶\s*/g,'\n').replace(/\s*¶PARA¶\s*/g,'\n\n')
 }
 
-var t=sanitize(txt).trim(); /* probably keep using txt instead of t? */
-var fi=t.indexOf(ST); /* final index to care about; if -1 then make it txt.length */
-var prefix=t.slice(0,fi===-1?t.length:fi);
-var exs=getExclusions(t);
+function findFirstNonEmpty(selector){
+  var els=document.querySelectorAll(selector);
+  for(var j=0;j<els.length;j++){
+    var txt=textract(els[j]);
+    if(txt.trim())return{el:els[j],txt:txt}
+  }
+  return{el:null,txt:''}
+}
+
+var txt='',sel='';
+for(var i=0;i<CONSEL.length;i++){
+  var r=findFirstNonEmpty(CONSEL[i]);
+  if(r.el){txt=r.txt;sel=CONSEL[i];break}
+}
+
+var stt=sanitize(txt).trim(); /* probably keep using txt instead of t? */
+var fi=stt.indexOf(ST); /* final index to care about; if -1, make it txt.length */
+var prefix=stt.slice(0,fi===-1?stt.length:fi); /* probably just replace txt again here, instead of new variable prefix? */
+var exs=getExclusions(stt);
 var pwc=tallyho(prefix);
 var minusTerms=[],s=0;
 for(var i=0;i<exs.length;i++){
@@ -183,10 +193,10 @@ dbg.href='#';
 dbg.textContent='debug link';
 dbg.addEventListener('click',function(e){
   e.preventDefault();
-  var w=window.open('','_blank'),h="<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}</style><h1>Tallyglot Debug Page</h1><h2>We use the first of these elements that's nonempty:</h2>";
+  var w=window.open('','_blank'),h="<style>body{font:12px monospace;padding:20px}h2{border-bottom:1px solid #333}pre{background:#f5f5f5;padding:10px;overflow:auto;white-space:pre-wrap}summary{cursor:pointer;font-size:14px;font-weight:bold;margin:10px 0 5px}summary:hover{background:#f0f0f0}</style><h1>Tallyglot Debug Page</h1><h2>We use the first of these elements that's nonempty:</h2>";
   function add(label,content){
     var wc=" <small style='color:#999'>("+tallyho(content)+" words)</small>";
-    h+='<h3>'+label+wc+'</h3><pre>'+escHtml(content)+'</pre>'
+    h+='<details><summary>'+label+wc+'</summary><pre>'+escHtml(content)+'</pre></details>'
   }
   function buildSel(e){
     var s=e.tagName.toLowerCase();
@@ -194,15 +204,14 @@ dbg.addEventListener('click',function(e){
     if(e.className)s+='.'+e.className.split(/\s+/).join('.');
     return s
   }
-  CONSEL.forEach(function(s){
-    var e=document.querySelector(s),v=e?(e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:(e.innerText||'')):'';
-    var m=e?' <small style="color:#666">→ '+buildSel(e)+'</small>':'';
-    add(s+m+(s===sel?' ✓':''),v)
+  CONSEL.forEach(function(selector){
+    var r=findFirstNonEmpty(selector);
+    var m=r.el?' <small style="color:#666">→ '+buildSel(r.el)+'</small>':'';
+    add(selector+m+(selector===sel?' ✓':''),r.txt)
   });
   h+="<h2>All Input/Textarea/Contenteditable elements:</h2>";
   document.querySelectorAll('input[type="text"],input:not([type]),textarea,[contenteditable="true"],[role="textbox"]').forEach(function(e){
-    var v=e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value||'':e.innerText||e.textContent||'';
-    add(buildSel(e),v)
+    add(buildSel(e),textract(e))
   });
   w.document.documentElement.innerHTML=h
 });
@@ -236,13 +245,12 @@ setTimeout(function(){
 }, 10)
 
 },100) /* end of setTimeout */
-/* 
-NB: We're near the bookmarklet length limit for Google Chrome, which seems to be the most restrictive mainstream browser in this regard.
-This comment can be jettisoned if needed. 
-Or lengthen it to see just how much space we have left before Chrome starts truncating it when you paste it in. 
-We're currently doing a fair bit of ugly compression in the above code, with a fair bit more possible, like by actually minifying it. 
-Thinking out loud: remaining features I'd like to add include allowing the concatenation of multiple elements, in order to include the title in the wordcount. 
-And ideally you could flip through the elements on the fly right there in the popup till you found the element with the actual content you care about, and then it would just remember that from then on for that website/domain. 
-Testing testing testing testing testing testing testing testing testing testing testing.
-*/
 })(); /* end of IIFE, end of tallyglot bookmarklet */
+/*
+We're near the bookmarklet length limit (I believe Google Chrome is the most restrictive in this regard).
+Lengthen this comment to see how much space we have left before Chrome starts truncating it when you paste it in.
+We're doing a fair bit of ugly compression in the above code, with more possible, like by actually minifying it.
+Thinking out loud: 
+It'd be nice to allow concatenation of multiple elements, to include the title in the wordcount.
+And ideally the user could flip through the elements on the fly right there in the popup till you found the element with the actual content you care about, and then it would just remember that from then on for that website/domain.
+*/
