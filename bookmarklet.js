@@ -1,6 +1,6 @@
 javascript:(function(){setTimeout(function(){
 
-var VER='2025.11.17-l';
+var VER='2025.11.25-d';
 var ST='BEGIN_WORDCOUNT_EXCLUSION';
 var ET='END_WORDCOUNT_EXCLUSION';
 var CONSEL=[ /* Content selectors to try in order */
@@ -9,16 +9,17 @@ var CONSEL=[ /* Content selectors to try in order */
 '.tiptap', /* Substack */
 'textarea.pencraft', /* Substack comment */
 '.cm-content', /* Replit */
-'body',
+'textarea', /* lots of things, eg, eat-the-richtext */
+'body', /* fallback */
+/* Nothing below this line ever needed? */
 'textarea.MuiTextarea-textarea.MuiInputBase-input', /* LessWrong title */
 'input[aria-label*="title"]', /* gissue title */
 'textarea[aria-label*="description"]',
-'textarea',
 'article',
 'main',
-/* 'textarea.comment-form-textarea', #SCHDEL */
-/* '.PostsPage-postContent', #SCHDEL */
-/* '.PostBody-root', #SCHDEL */
+'textarea.comment-form-textarea',
+'.PostsPage-postContent',
+'.PostBody-root',
 ];
 
 /* AI-generated black magic:
@@ -119,16 +120,16 @@ for(var i=0;i<CONSEL.length;i++){
   if(r.el){txt=r.txt;sel=CONSEL[i];break}
 }
 
-var stt=sanitize(txt).trim(); /* probably keep using txt instead of t? */
-var fi=stt.indexOf(ST); /* final index to care about; if -1, make it txt.length */
-var prefix=stt.slice(0,fi===-1?stt.length:fi); /* probably just replace txt again here, instead of new variable prefix? */
-var exs=getExclusions(stt);
-var pwc=tallyho(prefix);
+txt=sanitize(txt).trim();
+var exs=getExclusions(txt);
+var fi=txt.indexOf(ST); /* final index to care about */
+if(fi===-1)fi=txt.length;
+txt=txt.slice(0,fi);
+var pwc=tallyho(txt); /* preliminary wordcount */
 var minusTerms=[],s=0;
 for(var i=0;i<exs.length;i++){
-  var excl=exs[i];
-  var xwc=tallyho(excl);
-  var n=scount(prefix,excl);
+  var xwc=tallyho(exs[i]); /* excluded wordcount */
+  var n=scount(txt,exs[i]);
   minusTerms.push(xwc.toLocaleString()+'×'+n);
   s+=n*xwc
 }
@@ -146,7 +147,7 @@ tg.textContent=pwc.toLocaleString()+' – '+(minusTerms.length>0?minusTerms.join
 var words=document.createElement('div');
 words.className='mn r3 p8 lh';
 words.style.cssText='font-size:11px;color:#444;flex:1 1 auto;min-height:0;overflow:auto;background:#f5f5f5';
-words.innerHTML=highlightExcluded(prefix,exs);
+words.innerHTML=highlightExcluded(txt,exs);
 
 var cb=document.createElement('button');
 cb.className='ns mn r3 p8 bld tc';
@@ -223,20 +224,20 @@ footer.appendChild(dbg);
 document.body.appendChild(m);
 
 function isTypingKey(e){
-  if(e.ctrlKey || e.altKey || e.metaKey) return false; /* Shift is allowed */
-  var k = e.key || '';
-  return k.length === 1 /* printable chars, incl space */
+  if(e.ctrlKey||e.altKey||e.metaKey) return false; /* Shift is allowed */
+  var k=e.key||'';
+  return k.length===1 /* printable chars, incl space */
   || k==='Escape' || k==='Enter' || k==='Tab' || k==='Backspace' || k==='Delete'
 }
 
 function cleanup(){
-  if(m && m.parentNode)m.parentNode.removeChild(m);
+  if(m&&m.parentNode)m.parentNode.removeChild(m);
   document.removeEventListener('click', clickHandler, true);
   document.removeEventListener('keydown', keyHandler, true)
 }
 
-function clickHandler(evt){if(!m || !m.contains(evt.target)) cleanup()}
-function keyHandler(e){if(isTypingKey(e)) cleanup()}
+function clickHandler(evt){if(!m||!m.contains(evt.target))cleanup()}
+function keyHandler(e){if(isTypingKey(e))cleanup()}
 
 /* Delay to not immediately catch the opening click? */
 setTimeout(function(){
@@ -249,8 +250,9 @@ setTimeout(function(){
 /*
 We're near the bookmarklet length limit (I believe Google Chrome is the most restrictive in this regard).
 Lengthen this comment to see how much space we have left before Chrome starts truncating it when you paste it in.
-We're doing a fair bit of ugly compression in the above code, with more possible, like by actually minifying it.
-Thinking out loud: 
+We're doing a fair bit of ugly compression in the above code, with more possible, ie by actually minifying it.
+Thinking out loud:
 It'd be nice to allow concatenation of multiple elements, to include the title in the wordcount.
-And ideally the user could flip through the elements on the fly right there in the popup till you found the element with the actual content you care about, and then it would just remember that from then on for that website/domain.
+And ideally you (the user) could flip thru the elements on the fly right there in the popup till you found the element w/ the actual content you cared about.
+Even more ideally, it'd then remember that from then on for that website/domain.
 */
